@@ -558,9 +558,12 @@
     }
 
     .upgrade-modal {
-        max-height: 92vh;
+        width: 95%;
+        max-width: 500px;
+        max-height: 85vh;
+        margin: 1rem auto;
         padding: 1.4rem 1rem;
-        border-radius: 18px 18px 0 0;
+        border-radius: 18px;
     }
 
     .plan-comparison {

@@ -54,12 +54,12 @@
 
                 <div class="form-field">
                     <label for="profile-phone">Teléfono</label>
-                    <div class="phone-field">
-                        <svg class="field-icon field-icon--start" viewBox="0 0 24 24" aria-hidden="true">
+                    <div class="phone-field input-icon-wrapper">
+                        <svg class="profile-phone-icon input-icon-element" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M7 3H5a2 2 0 0 0-2 2c0 8.8 7.2 16 16 16a2 2 0 0 0 2-2v-2l-4-1-1.4 2.1a15 15 0 0 1-9.7-9.7L8 7 7 3Z" />
                         </svg>
                         <InputText id="profile-phone"
-                                   class="form-input"
+                                   class="form-input input-with-padding"
                                    inputmode="tel"
                                    autocomplete="tel"
                                    @bind-Value="profileModel.PhoneNumber"
@@ -220,8 +220,33 @@
             <h2 id="danger-title">Zona de peligro</h2>
             <p>Estas acciones son irreversibles. Procede con cuidado.</p>
         </div>
-        <button type="button">Cerrar y eliminar cuenta</button>
+        <button type="button" @onclick="() => showDeleteConfirmation = true">Cerrar y eliminar cuenta</button>
     </section>
+
+    @if (showDeleteConfirmation)
+    {
+        <div class="delete-account-overlay" role="presentation" @onclick="() => showDeleteConfirmation = false">
+            <section class="delete-account-modal"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="delete-account-title"
+                     @onclick:stopPropagation="true">
+                <span class="delete-account-modal__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 9v2m0 4h.01m-6.94 4h13.88a2 2 0 0 0 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.33 16a2 2 0 0 0 1.73 3Z" />
+                    </svg>
+                </span>
+                <h3 id="delete-account-title">¿Eliminar cuenta definitivamente?</h3>
+                <p>Esta acción es irreversible. Perderás el acceso a la plataforma, se borrará tu historial y se revocarán todos tus tokens de vinculación. ¿Estás absolutamente seguro de continuar?</p>
+                <footer class="delete-account-modal__actions">
+                    <button class="delete-account-button delete-account-button--cancel"
+                            type="button"
+                            @onclick="() => showDeleteConfirmation = false">Cancelar</button>
+                    <button class="delete-account-button delete-account-button--confirm" type="button">Sí, eliminar cuenta</button>
+                </footer>
+            </section>
+        </div>
+    }
 </section>
 
 @code {
@@ -231,6 +256,7 @@
     private bool showCurrentPassword;
     private bool showNewPassword;
     private bool showConfirmPassword;
+    private bool showDeleteConfirmation = false;
     private string? phoneValidationMessage;
     private string? photoNotice;
     private string? profileNotice;

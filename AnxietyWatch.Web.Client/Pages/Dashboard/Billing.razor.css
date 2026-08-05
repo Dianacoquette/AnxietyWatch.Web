@@ -579,26 +579,12 @@
     gap: 1rem;
 }
 
-.card-input-wrap {
-    position: relative;
-}
-
-.card-input-wrap > span {
-    position: absolute;
-    top: 50%;
-    left: 0.8rem;
-    z-index: 1;
+.card-visa-icon {
     color: #354f9b;
     font-family: Arial, sans-serif;
     font-size: 0.67rem;
     font-style: italic;
     font-weight: 900;
-    pointer-events: none;
-    transform: translateY(-50%);
-}
-
-.card-input-wrap .form-input {
-    padding-left: 3.3rem;
 }
 
 .payment-modal__actions {
@@ -696,6 +682,18 @@
 
     .payment-form-row {
         grid-template-columns: 1fr;
+    }
+
+    .payment-modal-overlay {
+        align-items: end;
+        padding: 0;
+    }
+
+    .payment-modal {
+        width: 95%;
+        max-width: 500px;
+        max-height: 85vh;
+        margin: 1rem auto;
     }
 
     .payment-modal__actions {

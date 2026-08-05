@@ -160,8 +160,7 @@
     font-size: 0.67rem;
 }
 
-.email-field,
-.phone-field {
+.email-field {
     position: relative;
 }
 
@@ -184,7 +183,15 @@
 
 .phone-field .form-input {
     padding-right: 2.7rem;
-    padding-left: 2.7rem;
+}
+
+.profile-phone-icon {
+    width: 17px;
+    fill: none;
+    stroke: #7d8982;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
 }
 
 .field-icon {
@@ -199,10 +206,6 @@
     stroke-width: 1.7;
     pointer-events: none;
     transform: translateY(-50%);
-}
-
-.field-icon--start {
-    left: 0.9rem;
 }
 
 .field-icon--end {
@@ -339,9 +342,103 @@
     background: #fff0f0;
 }
 
+.delete-account-overlay {
+    position: fixed;
+    z-index: 300;
+    inset: 0;
+    display: grid;
+    overflow-y: auto;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(20, 24, 22, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.delete-account-modal {
+    width: min(95%, 440px);
+    max-height: 85vh;
+    overflow-y: auto;
+    margin: 1rem auto;
+    padding: clamp(1.25rem, 4vw, 1.75rem);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 28px 80px rgba(28, 20, 20, 0.3);
+}
+
+.delete-account-modal__icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: #feecec;
+    color: #c83f3f;
+}
+
+.delete-account-modal__icon svg {
+    width: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.delete-account-modal h3 {
+    margin: 0;
+    color: #29312d;
+    font-size: 1.15rem;
+}
+
+.delete-account-modal > p {
+    margin: 0.65rem 0 0;
+    color: #727d77;
+    font-size: 0.75rem;
+    line-height: 1.65;
+}
+
+.delete-account-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    margin-top: 1.5rem;
+}
+
+.delete-account-button {
+    min-height: 42px;
+    padding: 0.65rem 1rem;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 850;
+}
+
+.delete-account-button--cancel {
+    border: 1px solid #e0e5e2;
+    background: #f3f5f4;
+    color: #59655f;
+}
+
+.delete-account-button--cancel:hover {
+    background: #e8ece9;
+}
+
+.delete-account-button--confirm {
+    border: 1px solid #c83f3f;
+    background: #c83f3f;
+    color: #fff;
+}
+
+.delete-account-button--confirm:hover {
+    background: #ad3232;
+}
+
 .avatar-edit-button:focus-visible,
 .primary-profile-button:focus-visible,
-.danger-card button:focus-visible {
+.danger-card button:focus-visible,
+.delete-account-button:focus-visible {
     outline: 3px solid rgba(121, 105, 168, 0.25);
     outline-offset: 2px;
 }
@@ -362,6 +459,14 @@
     }
 
     .danger-card button {
+        width: 100%;
+    }
+
+    .delete-account-modal__actions {
+        flex-direction: column;
+    }
+
+    .delete-account-button {
         width: 100%;
     }
 }

@@ -183,3 +183,38 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Clases globales para inputs con iconos */
+.input-icon-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-icon-element {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+    /* Asegura que tanto SVGs como imágenes/iconos se comporten bien */
+    max-width: 1.5rem;
+    max-height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-with-padding {
+    padding-left: 3rem !important;
+}
+
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table > table {
+    min-width: 100%;
+}

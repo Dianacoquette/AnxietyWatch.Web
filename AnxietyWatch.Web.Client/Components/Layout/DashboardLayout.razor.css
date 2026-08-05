@@ -95,7 +95,6 @@
 .sidebar-nav ::deep .sidebar-link svg,
 .logout-link svg,
 .back-link svg,
-.notification-button svg,
 .profile-chevron {
     width: 20px;
     height: 20px;
@@ -234,35 +233,6 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-}
-
-.notification-button {
-    position: relative;
-    display: grid;
-    width: 40px;
-    height: 40px;
-    place-items: center;
-    border: 1px solid var(--line);
-    border-radius: 11px;
-    background: #fff;
-    color: #65706c;
-    cursor: pointer;
-}
-
-.notification-button:hover {
-    border-color: #cddbd5;
-    color: var(--sage-700);
-}
-
-.notification-dot {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 7px;
-    height: 7px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    background: #d69b70;
 }
 
 .new-token-button {
@@ -478,7 +448,6 @@
 .sidebar-nav ::deep a.sidebar-link:focus-visible,
 .logout-link:focus-visible,
 .back-link:focus-visible,
-.notification-button:focus-visible,
 .new-token-button:focus-visible,
 .user-profile:focus-visible,
 .profile-dropdown__links a:focus-visible {
@@ -520,12 +489,22 @@
         overflow-y: hidden;
         margin-top: 1rem;
         padding-bottom: 0.15rem;
-        scrollbar-width: thin;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .sidebar-nav ::deep .sidebar-link {
+        flex: 0 0 auto;
         min-width: max-content;
         min-height: 40px;
+        scroll-snap-align: start;
     }
 
     .sidebar-footer {

@@ -118,7 +118,7 @@
             <button class="clear-filters-button" type="button" @onclick="ClearFilters">Limpiar filtros</button>
         </div>
 
-        <div class="invoice-table-wrap">
+        <div class="invoice-table-wrap responsive-table">
             <table class="invoice-table">
                 <thead>
                     <tr>
@@ -200,10 +200,10 @@
 
                     <div class="payment-form-field">
                         <label for="card-number">Número de tarjeta</label>
-                        <div class="card-input-wrap">
-                            <span aria-hidden="true">VISA</span>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon-element card-visa-icon" aria-hidden="true">VISA</span>
                             <InputText id="card-number"
-                                       class="form-input"
+                                       class="form-input input-with-padding"
                                        inputmode="numeric"
                                        maxlength="16"
                                        autocomplete="cc-number"

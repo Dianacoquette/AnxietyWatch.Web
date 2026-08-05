@@ -626,28 +626,12 @@
     }
 }
 
-.auth-input-wrap {
-    position: relative;
-    width: 100%;
-}
-
 .auth-field-icon {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
     width: 18px;
-    transform: translateY(-50%);
     color: #9ca3af;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.7;
-    z-index: 10;
-    pointer-events: none;
-}
-
-/* El selector ::deep aplica el padding al input renderizado por InputText. */
-::deep .auth-input-icon {
-    padding-left: 3rem !important;
 }
