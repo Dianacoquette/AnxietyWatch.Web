@@ -1,0 +1,63 @@
+@inherits LayoutComponentBase
+
+<div class="public-shell">
+    <header class="public-header">
+        <nav class="public-navbar" aria-label="Navegación principal">
+            <a class="public-brand" href="/" aria-label="AnxietyWatch, ir al inicio">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 21c4.5-2.7 7-6.4 7-10.2A4.8 4.8 0 0 0 14.2 6c-.9 0-1.7.2-2.2.8A3 3 0 0 0 9.8 6 4.8 4.8 0 0 0 5 10.8C5 14.6 7.5 18.3 12 21Z" />
+                        <path d="M8.3 12h2l1.1-2.3 1.6 4.6 1.1-2.3h1.8" />
+                    </svg>
+                </span>
+                <span>AnxietyWatch</span>
+            </a>
+
+            <div class="desktop-navigation">
+                <a href="/#inicio">Inicio</a>
+                <a href="/#caracteristicas">Características</a>
+                <a href="/#como-funciona">Cómo funciona</a>
+                <a href="/#recursos">Recursos</a>
+                <a href="/#sobre-nosotros">Sobre nosotros</a>
+            </div>
+
+            <div class="desktop-actions">
+                <a class="login-link" href="/login">Iniciar sesión</a>
+                <a class="register-link" href="/register">Registrarse</a>
+            </div>
+
+            <details class="mobile-menu">
+                <summary aria-label="Abrir menú de navegación">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </summary>
+                <div class="mobile-menu__panel">
+                    <a href="/#inicio">Inicio</a>
+                    <a href="/#caracteristicas">Características</a>
+                    <a href="/#como-funciona">Cómo funciona</a>
+                    <a href="/#recursos">Recursos</a>
+                    <a href="/#sobre-nosotros">Sobre nosotros</a>
+                    <div class="mobile-menu__actions">
+                        <a class="login-link" href="/login">Iniciar sesión</a>
+                        <a class="register-link" href="/register">Registrarse</a>
+                    </div>
+                </div>
+            </details>
+        </nav>
+    </header>
+
+    <main class="public-main">
+        @Body
+    </main>
+
+    <footer class="public-footer">
+        <p>&copy; @DateTime.Now.Year AnxietyWatch. Tu bienestar, más claro cada día.</p>
+    </footer>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Se produjo un error inesperado.
+    <a href="." class="reload">Recargar</a>
+    <button type="button" class="dismiss" aria-label="Cerrar">×</button>
+</div>

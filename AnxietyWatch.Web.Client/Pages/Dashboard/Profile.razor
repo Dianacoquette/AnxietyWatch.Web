@@ -1,0 +1,297 @@
+@page "/dashboard/profile"
+@using System.ComponentModel.DataAnnotations
+@layout DashboardLayout
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Mi perfil | AnxietyWatch</PageTitle>
+
+<section class="profile-page">
+    <header class="profile-page__header">
+        <div>
+            <span class="profile-page__eyebrow">Cuenta</span>
+            <h1>Mi perfil</h1>
+            <p>Administra tus datos personales y la seguridad de tu cuenta.</p>
+        </div>
+    </header>
+
+    <EditForm Model="profileModel" OnValidSubmit="SaveProfile">
+        <DataAnnotationsValidator />
+
+        <section class="profile-card" aria-labelledby="general-information-title">
+            <div class="profile-card__heading profile-card__heading--identity">
+                <div class="profile-avatar-wrap">
+                    <span class="profile-avatar" aria-hidden="true">AR</span>
+                    <button class="avatar-edit-button"
+                            type="button"
+                            aria-label="Cambiar foto de perfil"
+                            title="Cambiar foto de perfil"
+                            @onclick="SimulatePhotoUpload">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4M14.8 5.2l1.4-1.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L18.8 9.2" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="profile-identity">
+                    <h2 id="general-information-title">Alex Rivera</h2>
+                    <span>Plan Profesional</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(photoNotice))
+            {
+                <div class="inline-notice" role="status">@photoNotice</div>
+            }
+
+            <div class="profile-fields">
+                <div class="form-field">
+                    <label for="profile-email">Correo electrónico</label>
+                    <div class="email-field">
+                        <input id="profile-email" class="form-input" type="email" value="alex@demo.com" readonly />
+                        <span>Verificado</span>
+                    </div>
+                    <small>Para cambiar el correo contacta a soporte.</small>
+                </div>
+
+                <div class="form-field">
+                    <label for="profile-phone">Teléfono</label>
+                    <div class="phone-field">
+                        <svg class="field-icon field-icon--start" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 3H5a2 2 0 0 0-2 2c0 8.8 7.2 16 16 16a2 2 0 0 0 2-2v-2l-4-1-1.4 2.1a15 15 0 0 1-9.7-9.7L8 7 7 3Z" />
+                        </svg>
+                        <InputText id="profile-phone"
+                                   class="form-input"
+                                   inputmode="tel"
+                                   autocomplete="tel"
+                                   @bind-Value="profileModel.PhoneNumber"
+                                   @oninput="UpdatePhoneNumber" />
+                        <svg class="field-icon field-icon--end" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4" />
+                        </svg>
+                    </div>
+                    <ValidationMessage For="@(() => profileModel.PhoneNumber)" />
+                    @if (!string.IsNullOrEmpty(phoneValidationMessage))
+                    {
+                        <span class="validation-message" role="alert">@phoneValidationMessage</span>
+                    }
+                </div>
+            </div>
+
+            <div class="profile-metadata">
+                <span>Miembro desde</span>
+                <strong>Mayo 2026</strong>
+            </div>
+
+            @if (!string.IsNullOrEmpty(profileNotice))
+            {
+                <div class="inline-notice" role="status">@profileNotice</div>
+            }
+
+            <div class="profile-card__actions">
+                <button class="primary-profile-button" type="submit" disabled="@(!IsProfileValid())">Guardar cambios</button>
+            </div>
+        </section>
+    </EditForm>
+
+    <EditForm Model="passwordModel" OnValidSubmit="UpdatePassword">
+        <DataAnnotationsValidator />
+
+        <section class="profile-card" aria-labelledby="password-title">
+            <div class="profile-card__heading">
+                <span class="section-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="5" y="10" width="14" height="11" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                    </svg>
+                </span>
+                <div>
+                    <h2 id="password-title">Cambiar contraseña</h2>
+                    <p>Usa una contraseña segura que no utilices en otros servicios.</p>
+                </div>
+            </div>
+
+            <div class="password-fields">
+                <div class="form-field">
+                    <label for="current-password">Contraseña actual</label>
+                    <div class="password-input-wrapper">
+                        <InputText id="current-password"
+                                   class="form-input password-input"
+                                   type="@(showCurrentPassword ? "text" : "password")"
+                                   autocomplete="current-password"
+                                   @bind-Value="passwordModel.CurrentPassword" />
+                        <button class="password-toggle"
+                                type="button"
+                                aria-label="@(showCurrentPassword ? "Ocultar contraseña actual" : "Mostrar contraseña actual")"
+                                aria-pressed="@showCurrentPassword"
+                                @onclick="() => showCurrentPassword = !showCurrentPassword">
+                            @if (showCurrentPassword)
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                                    <circle cx="12" cy="12" r="2.5" />
+                                </svg>
+                            }
+                        </button>
+                    </div>
+                    <ValidationMessage For="@(() => passwordModel.CurrentPassword)" />
+                </div>
+
+                <div class="form-field">
+                    <label for="new-password">Nueva contraseña</label>
+                    <div class="password-input-wrapper">
+                        <InputText id="new-password"
+                                   class="form-input password-input"
+                                   type="@(showNewPassword ? "text" : "password")"
+                                   autocomplete="new-password"
+                                   @bind-Value="passwordModel.NewPassword" />
+                        <button class="password-toggle"
+                                type="button"
+                                aria-label="@(showNewPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña")"
+                                aria-pressed="@showNewPassword"
+                                @onclick="() => showNewPassword = !showNewPassword">
+                            @if (showNewPassword)
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                                    <circle cx="12" cy="12" r="2.5" />
+                                </svg>
+                            }
+                        </button>
+                    </div>
+                    <ValidationMessage For="@(() => passwordModel.NewPassword)" />
+                </div>
+
+                <div class="form-field">
+                    <label for="confirm-password">Confirmar nueva contraseña</label>
+                    <div class="password-input-wrapper">
+                        <InputText id="confirm-password"
+                                   class="form-input password-input"
+                                   type="@(showConfirmPassword ? "text" : "password")"
+                                   autocomplete="new-password"
+                                   @bind-Value="passwordModel.ConfirmPassword" />
+                        <button class="password-toggle"
+                                type="button"
+                                aria-label="@(showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña")"
+                                aria-pressed="@showConfirmPassword"
+                                @onclick="() => showConfirmPassword = !showConfirmPassword">
+                            @if (showConfirmPassword)
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                                    <circle cx="12" cy="12" r="2.5" />
+                                </svg>
+                            }
+                        </button>
+                    </div>
+                    <ValidationMessage For="@(() => passwordModel.ConfirmPassword)" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(passwordNotice))
+            {
+                <div class="inline-notice" role="status">@passwordNotice</div>
+            }
+
+            <div class="profile-card__actions">
+                <button class="primary-profile-button" type="submit">Actualizar contraseña</button>
+            </div>
+        </section>
+    </EditForm>
+
+    <section class="profile-card danger-card" aria-labelledby="danger-title">
+        <div>
+            <h2 id="danger-title">Zona de peligro</h2>
+            <p>Estas acciones son irreversibles. Procede con cuidado.</p>
+        </div>
+        <button type="button">Cerrar y eliminar cuenta</button>
+    </section>
+</section>
+
+@code {
+    private readonly ProfileModel profileModel = new();
+    private readonly PasswordModel passwordModel = new();
+
+    private bool showCurrentPassword;
+    private bool showNewPassword;
+    private bool showConfirmPassword;
+    private string? phoneValidationMessage;
+    private string? photoNotice;
+    private string? profileNotice;
+    private string? passwordNotice;
+
+    private void UpdatePhoneNumber(ChangeEventArgs args)
+    {
+        profileModel.PhoneNumber = args.Value?.ToString() ?? string.Empty;
+        phoneValidationMessage = GetPhoneValidationMessage();
+        profileNotice = null;
+    }
+
+    private string? GetPhoneValidationMessage()
+    {
+        var context = new ValidationContext(profileModel)
+        {
+            MemberName = nameof(ProfileModel.PhoneNumber)
+        };
+        var results = new List<ValidationResult>();
+
+        Validator.TryValidateProperty(profileModel.PhoneNumber, context, results);
+        return results.FirstOrDefault()?.ErrorMessage;
+    }
+
+    private bool IsProfileValid() => GetPhoneValidationMessage() is null;
+
+    private async Task SimulatePhotoUpload()
+    {
+        photoNotice = "Carga de foto simulada correctamente.";
+        await Task.Delay(2500);
+        photoNotice = null;
+    }
+
+    private void SaveProfile()
+    {
+        profileNotice = "Tus cambios se guardaron correctamente.";
+    }
+
+    private void UpdatePassword()
+    {
+        passwordNotice = "Tu contraseña se actualizó correctamente.";
+    }
+
+    public sealed class ProfileModel
+    {
+        [Required(ErrorMessage = "El teléfono es obligatorio.")]
+        [RegularExpression(@"^\+?[0-9][0-9\s\-()]{6,19}$", ErrorMessage = "Introduce un número de teléfono válido.")]
+        public string PhoneNumber { get; set; } = "+34 600 123 456";
+    }
+
+    public sealed class PasswordModel
+    {
+        [Required(ErrorMessage = "La contraseña actual es obligatoria.")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La nueva contraseña es obligatoria.")]
+        [MinLength(8, ErrorMessage = "La nueva contraseña debe tener al menos 8 caracteres.")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirma la nueva contraseña.")]
+        [Compare(nameof(NewPassword), ErrorMessage = "Las contraseñas no coinciden.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,417 @@
+@page "/dashboard/billing"
+@using System.ComponentModel.DataAnnotations
+@layout DashboardLayout
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Facturación | AnxietyWatch</PageTitle>
+
+<section class="billing-page" aria-labelledby="billing-title">
+    <header class="billing-header">
+        <span>Cuenta</span>
+        <h1 id="billing-title">Facturación</h1>
+        <p>Consulta tu suscripción, método de pago e historial de facturas.</p>
+    </header>
+
+    <article class="billing-overview">
+        <section class="plan-summary" aria-labelledby="active-plan-title">
+            <div class="summary-heading">
+                <div>
+                    <span class="summary-label">Plan activo</span>
+                    <div class="plan-title-row">
+                        <h2 id="active-plan-title">Familiar</h2>
+                        <span class="active-badge">Activo</span>
+                    </div>
+                </div>
+                <a class="outline-button" href="/dashboard/plan">Cambiar plan</a>
+            </div>
+
+            <div class="plan-price">
+                <strong>$8.99</strong><span>/mes</span>
+            </div>
+
+            <div class="renewal-detail">
+                <span class="summary-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                        <path d="M8 3v4m8-4v4M3 10h18" />
+                    </svg>
+                </span>
+                <div>
+                    <span>Próxima renovación</span>
+                    <strong>17 de agosto de 2026</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="payment-summary" aria-labelledby="payment-method-title">
+            <div class="summary-heading">
+                <div>
+                    <span class="summary-label">Método de pago</span>
+                    <h2 id="payment-method-title">Tarjeta principal</h2>
+                </div>
+                <button class="edit-payment-button" type="button" @onclick="OpenPaymentModal">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4" />
+                    </svg>
+                    Editar
+                </button>
+            </div>
+
+            <div class="card-number-row">
+                <span class="visa-mark" aria-label="Visa">VISA</span>
+                <strong>@MaskedCardNumber</strong>
+            </div>
+
+            <dl class="payment-details">
+                <div>
+                    <dt>Vencimiento</dt>
+                    <dd>@savedExpiry</dd>
+                </div>
+                <div>
+                    <dt>Titular</dt>
+                    <dd>@savedCardName</dd>
+                </div>
+            </dl>
+        </section>
+    </article>
+
+    @if (!string.IsNullOrEmpty(paymentNotice))
+    {
+        <div class="billing-notice" role="status">@paymentNotice</div>
+    }
+
+    <section class="invoice-card" aria-labelledby="invoice-history-title">
+        <header class="invoice-card__header">
+            <div>
+                <h2 id="invoice-history-title">Historial de facturas</h2>
+                <p>Revisa los cobros asociados a tus suscripciones.</p>
+            </div>
+            <span>@FilteredInvoiceCount facturas</span>
+        </header>
+
+        <div class="invoice-filters" aria-label="Filtros de facturas">
+            <div class="filter-field">
+                <label for="plan-filter">Plan</label>
+                <InputSelect id="plan-filter" class="filter-control" @bind-Value="PlanFilter">
+                    <option value="">Todos</option>
+                    <option value="Familiar">Familiar</option>
+                    <option value="Individual">Individual</option>
+                    <option value="Profesional">Profesional</option>
+                </InputSelect>
+            </div>
+
+            <div class="filter-field">
+                <label for="status-filter">Estado</label>
+                <InputSelect id="status-filter" class="filter-control" @bind-Value="StatusFilter">
+                    <option value="">Todos</option>
+                    <option value="Pagado">Pagado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Fallido">Fallido</option>
+                </InputSelect>
+            </div>
+
+            <div class="filter-field">
+                <label for="period-filter">Fecha / periodo</label>
+                <InputText id="period-filter" class="filter-control" type="month" @bind-Value="PeriodFilter" />
+            </div>
+
+            <button class="clear-filters-button" type="button" @onclick="ClearFilters">Limpiar filtros</button>
+        </div>
+
+        <div class="invoice-table-wrap">
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Factura</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Periodo</th>
+                        <th scope="col">Plan</th>
+                        <th scope="col">Importe</th>
+                        <th scope="col">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (filteredInvoices.Count == 0)
+                    {
+                        <tr>
+                            <td class="empty-invoices" colspan="6">No hay facturas que coincidan con los filtros seleccionados.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var invoice in filteredInvoices)
+                        {
+                            <tr>
+                                <td><strong>@invoice.InvoiceNumber</strong></td>
+                                <td>@invoice.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@invoice.Period</td>
+                                <td>@invoice.Plan</td>
+                                <td><strong>@($"${invoice.Amount:0.00}")</strong></td>
+                                <td><span class="invoice-status @GetStatusClass(invoice.Status)">@invoice.Status</span></td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="invoice-pagination" aria-label="Paginación del historial de facturas">
+            <button type="button" disabled="@(currentPage == 1)" @onclick="PreviousPage">Anterior</button>
+            <span>Página <strong>@currentPage</strong> de <strong>@TotalPages</strong></span>
+            <button type="button" disabled="@(currentPage >= TotalPages)" @onclick="NextPage">Siguiente</button>
+        </nav>
+    </section>
+
+    @if (showPaymentModal)
+    {
+        <div class="payment-modal-overlay" role="presentation" @onclick="ClosePaymentModal">
+            <section class="payment-modal"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="payment-modal-title"
+                     @onclick:stopPropagation="true">
+                <header class="payment-modal__header">
+                    <div>
+                        <span class="modal-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <path d="M3 9h18M7 15h4" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2 id="payment-modal-title">Editar método de pago</h2>
+                            <p>Actualiza los datos de tu tarjeta principal.</p>
+                        </div>
+                    </div>
+                    <button class="payment-modal__close" type="button" aria-label="Cerrar modal" @onclick="ClosePaymentModal">×</button>
+                </header>
+
+                <EditForm Model="paymentModel" OnValidSubmit="SavePaymentMethod">
+                    <DataAnnotationsValidator />
+
+                    <div class="payment-form-field">
+                        <label for="card-name">Titular de la tarjeta</label>
+                        <InputText id="card-name"
+                                   class="form-input"
+                                   autocomplete="cc-name"
+                                   @bind-Value="paymentModel.CardName" />
+                        <ValidationMessage For="@(() => paymentModel.CardName)" />
+                    </div>
+
+                    <div class="payment-form-field">
+                        <label for="card-number">Número de tarjeta</label>
+                        <div class="card-input-wrap">
+                            <span aria-hidden="true">VISA</span>
+                            <InputText id="card-number"
+                                       class="form-input"
+                                       inputmode="numeric"
+                                       maxlength="16"
+                                       autocomplete="cc-number"
+                                       @bind-Value="paymentModel.CardNumber" />
+                        </div>
+                        <ValidationMessage For="@(() => paymentModel.CardNumber)" />
+                    </div>
+
+                    <div class="payment-form-row">
+                        <div class="payment-form-field">
+                            <label for="card-expiry">Fecha de vencimiento</label>
+                            <InputText id="card-expiry"
+                                       class="form-input"
+                                       placeholder="MM/AA"
+                                       maxlength="5"
+                                       inputmode="numeric"
+                                       autocomplete="cc-exp"
+                                       @bind-Value="paymentModel.Expiry" />
+                            <ValidationMessage For="@(() => paymentModel.Expiry)" />
+                        </div>
+
+                        <div class="payment-form-field">
+                            <label for="card-cvv">CVV</label>
+                            <InputText id="card-cvv"
+                                       class="form-input"
+                                       type="password"
+                                       placeholder="•••"
+                                       maxlength="4"
+                                       inputmode="numeric"
+                                       autocomplete="cc-csc"
+                                       @bind-Value="paymentModel.Cvv" />
+                            <ValidationMessage For="@(() => paymentModel.Cvv)" />
+                        </div>
+                    </div>
+
+                    <footer class="payment-modal__actions">
+                        <button class="modal-button modal-button--cancel" type="button" @onclick="ClosePaymentModal">Cancelar</button>
+                        <button class="modal-button modal-button--save" type="submit">Guardar cambios</button>
+                    </footer>
+                </EditForm>
+            </section>
+        </div>
+    }
+</section>
+
+@code {
+    private const int PageSize = 5;
+
+    private readonly List<InvoiceModel> invoices =
+    [
+        new("FAC-2026-015", new DateTime(2026, 8, 1), "Agosto 2026", "Familiar", 8.99m, "Pendiente"),
+        new("FAC-2026-014", new DateTime(2026, 7, 1), "Julio 2026", "Familiar", 8.99m, "Pagado"),
+        new("FAC-2026-013", new DateTime(2026, 6, 1), "Junio 2026", "Profesional", 19.99m, "Pagado"),
+        new("FAC-2026-012", new DateTime(2026, 5, 1), "Mayo 2026", "Profesional", 19.99m, "Fallido"),
+        new("FAC-2026-011", new DateTime(2026, 4, 1), "Abril 2026", "Individual", 4.99m, "Pagado"),
+        new("FAC-2026-010", new DateTime(2026, 3, 1), "Marzo 2026", "Individual", 4.99m, "Pagado"),
+        new("FAC-2026-009", new DateTime(2026, 2, 1), "Febrero 2026", "Familiar", 8.99m, "Pagado"),
+        new("FAC-2026-008", new DateTime(2026, 1, 1), "Enero 2026", "Familiar", 8.99m, "Fallido"),
+        new("FAC-2025-007", new DateTime(2025, 12, 1), "Diciembre 2025", "Profesional", 19.99m, "Pagado"),
+        new("FAC-2025-006", new DateTime(2025, 11, 1), "Noviembre 2025", "Profesional", 19.99m, "Pagado"),
+        new("FAC-2025-005", new DateTime(2025, 10, 1), "Octubre 2025", "Individual", 4.99m, "Pendiente"),
+        new("FAC-2025-004", new DateTime(2025, 9, 1), "Septiembre 2025", "Individual", 4.99m, "Pagado"),
+        new("FAC-2025-003", new DateTime(2025, 8, 1), "Agosto 2025", "Familiar", 8.99m, "Pagado"),
+        new("FAC-2025-002", new DateTime(2025, 7, 1), "Julio 2025", "Familiar", 8.99m, "Fallido"),
+        new("FAC-2025-001", new DateTime(2025, 6, 1), "Junio 2025", "Individual", 4.99m, "Pagado")
+    ];
+
+    private PaymentMethodModel paymentModel = new();
+    private bool showPaymentModal;
+    private int currentPage = 1;
+    private string planFilter = string.Empty;
+    private string statusFilter = string.Empty;
+    private string periodFilter = string.Empty;
+    private string savedCardName = "Alex Rivera";
+    private string savedCardNumber = "4242424242424242";
+    private string savedExpiry = "08/28";
+    private string? paymentNotice;
+
+    private string PlanFilter
+    {
+        get => planFilter;
+        set
+        {
+            planFilter = value;
+            currentPage = 1;
+        }
+    }
+
+    private string StatusFilter
+    {
+        get => statusFilter;
+        set
+        {
+            statusFilter = value;
+            currentPage = 1;
+        }
+    }
+
+    private string PeriodFilter
+    {
+        get => periodFilter;
+        set
+        {
+            periodFilter = value;
+            currentPage = 1;
+        }
+    }
+
+    private IEnumerable<InvoiceModel> FilteredInvoiceQuery => invoices.Where(invoice =>
+        (string.IsNullOrEmpty(planFilter) || invoice.Plan == planFilter) &&
+        (string.IsNullOrEmpty(statusFilter) || invoice.Status == statusFilter) &&
+        (string.IsNullOrEmpty(periodFilter) || invoice.Date.ToString("yyyy-MM") == periodFilter));
+
+    private IReadOnlyList<InvoiceModel> filteredInvoices => FilteredInvoiceQuery
+        .Skip((currentPage - 1) * PageSize)
+        .Take(PageSize)
+        .ToList();
+
+    private int FilteredInvoiceCount => FilteredInvoiceQuery.Count();
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredInvoiceCount / (double)PageSize));
+    private string MaskedCardNumber => $"**** **** **** {savedCardNumber[^4..]}";
+
+    private void ClearFilters()
+    {
+        planFilter = string.Empty;
+        statusFilter = string.Empty;
+        periodFilter = string.Empty;
+        currentPage = 1;
+    }
+
+    private void PreviousPage()
+    {
+        currentPage = Math.Max(1, currentPage - 1);
+    }
+
+    private void NextPage()
+    {
+        currentPage = Math.Min(TotalPages, currentPage + 1);
+    }
+
+    private void OpenPaymentModal()
+    {
+        paymentModel = new PaymentMethodModel
+        {
+            CardName = savedCardName,
+            CardNumber = savedCardNumber,
+            Expiry = savedExpiry
+        };
+        paymentNotice = null;
+        showPaymentModal = true;
+    }
+
+    private void ClosePaymentModal()
+    {
+        showPaymentModal = false;
+    }
+
+    private void SavePaymentMethod()
+    {
+        savedCardName = paymentModel.CardName;
+        savedCardNumber = paymentModel.CardNumber;
+        savedExpiry = paymentModel.Expiry;
+        showPaymentModal = false;
+        paymentNotice = "El método de pago se actualizó correctamente.";
+    }
+
+    private static string GetStatusClass(string status) => status switch
+    {
+        "Pagado" => "invoice-status--paid",
+        "Pendiente" => "invoice-status--pending",
+        _ => "invoice-status--failed"
+    };
+
+    public sealed class InvoiceModel
+    {
+        public InvoiceModel(string invoiceNumber, DateTime date, string period, string plan, decimal amount, string status)
+        {
+            InvoiceNumber = invoiceNumber;
+            Date = date;
+            Period = period;
+            Plan = plan;
+            Amount = amount;
+            Status = status;
+        }
+
+        public string InvoiceNumber { get; }
+        public DateTime Date { get; }
+        public string Period { get; }
+        public string Plan { get; }
+        public decimal Amount { get; }
+        public string Status { get; }
+    }
+
+    public sealed class PaymentMethodModel
+    {
+        [Required(ErrorMessage = "El titular de la tarjeta es obligatorio.")]
+        public string CardName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El número de tarjeta es obligatorio.")]
+        [RegularExpression(@"^\d{16}$", ErrorMessage = "Introduce los 16 dígitos de la tarjeta.")]
+        public string CardNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La fecha de vencimiento es obligatoria.")]
+        [RegularExpression(@"^(0[1-9]|1[0-2])/\d{2}$", ErrorMessage = "Usa el formato MM/AA.")]
+        public string Expiry { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El CVV es obligatorio.")]
+        [RegularExpression(@"^\d{3,4}$", ErrorMessage = "El CVV debe tener 3 o 4 dígitos.")]
+        public string Cvv { get; set; } = string.Empty;
+    }
+}

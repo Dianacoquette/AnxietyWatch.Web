@@ -1,0 +1,588 @@
+@page "/login"
+@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@rendermode InteractiveWebAssembly
+
+<PageTitle>@(isLoginView ? "Iniciar sesión" : "Crear cuenta") | AnxietyWatch</PageTitle>
+
+<section class="auth-shell">
+    <div class="@GetAuthCardClass()">
+        <nav class="auth-tabs" role="tablist" aria-label="Acceso a AnxietyWatch">
+            <button type="button"
+                    role="tab"
+                    aria-selected="@isLoginView"
+                    class="@(isLoginView ? "is-active" : null)"
+                    @onclick="ShowLogin">
+                Iniciar sesión
+            </button>
+            <button type="button"
+                    role="tab"
+                    aria-selected="@(!isLoginView)"
+                    class="@(!isLoginView ? "is-active" : null)"
+                    @onclick="ShowRegister">
+                Crear cuenta
+            </button>
+        </nav>
+
+        @if (!string.IsNullOrWhiteSpace(authError))
+        {
+            <div class="auth-alert auth-alert--error" role="alert">@authError</div>
+        }
+
+        @if (isLoginView && showSuccessMessage)
+        {
+            <div class="auth-alert auth-alert--success" role="status">¡Cuenta verificada! Ahora puedes iniciar sesión.</div>
+        }
+
+        @if (isLoginView)
+        {
+            <div class="auth-view auth-view--login">
+                <header class="auth-heading">
+                    <span class="auth-heading__mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 21c4.5-2.7 7-6.4 7-10.2A4.8 4.8 0 0 0 14.2 6c-.9 0-1.7.2-2.2.8A3 3 0 0 0 9.8 6 4.8 4.8 0 0 0 5 10.8C5 14.6 7.5 18.3 12 21Z" />
+                            <path d="M8.3 12h2l1.1-2.3 1.6 4.6 1.1-2.3h1.8" />
+                        </svg>
+                    </span>
+                    <h1>Bienvenido de vuelta</h1>
+                    <p>Continúa cuidando de tu bienestar con AnxietyWatch.</p>
+                </header>
+
+                <EditForm Model="loginModel" OnValidSubmit="HandleLogin" class="auth-form">
+                    <DataAnnotationsValidator />
+
+                    <div class="auth-field">
+                        <label for="login-email">Correo electrónico</label>
+                        <div class="auth-input-wrap">
+                            <svg class="auth-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <path d="m4 7 8 6 8-6" />
+                            </svg>
+                            <InputText id="login-email"
+                                       class="form-input auth-input auth-input-icon"
+                                       type="email"
+                                       autocomplete="email"
+                                       placeholder="correo@ejemplo.com"
+                                       @bind-Value="loginModel.Email" />
+                        </div>
+                        <ValidationMessage For="@(() => loginModel.Email)" />
+                    </div>
+
+                    <div class="auth-field">
+                        <div class="field-label-row">
+                            <label for="login-password">Contraseña</label>
+                            <a href="mailto:soporte@anxietywatch.com?subject=Recuperar%20contraseña">¿Olvidaste tu contraseña?</a>
+                        </div>
+                        <div class="auth-input-wrap">
+                            <svg class="auth-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="5" y="10" width="14" height="11" rx="2" />
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                            </svg>
+                            <InputText id="login-password"
+                                       class="form-input auth-input auth-input-icon"
+                                       type="@(showLoginPassword ? "text" : "password")"
+                                       autocomplete="current-password"
+                                       placeholder="Tu contraseña"
+                                       @bind-Value="loginModel.Password" />
+                            <button class="auth-password-toggle"
+                                    type="button"
+                                    aria-label="@(showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña")"
+                                    aria-pressed="@showLoginPassword"
+                                    @onclick="() => showLoginPassword = !showLoginPassword">
+                                @if (showLoginPassword)
+                                {
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                                        <circle cx="12" cy="12" r="2.5" />
+                                    </svg>
+                                }
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => loginModel.Password)" />
+                    </div>
+
+                    <button class="auth-primary auth-primary--sage"
+                            type="submit"
+                            disabled="@isSubmitting"
+                            aria-busy="@isSubmitting">
+                        @(isSubmitting ? "Iniciando sesión..." : "Iniciar sesión")
+                    </button>
+                </EditForm>
+            </div>
+        }
+        else
+        {
+            <ol class="register-steps" aria-label="Progreso del registro">
+                <li class="@GetStepClass(1)"><span>1</span><strong>Datos</strong></li>
+                <li class="register-steps__line @(registerStep >= 2 ? "is-active" : null)" aria-hidden="true"></li>
+                <li class="@GetStepClass(2)"><span>2</span><strong>Plan y pago</strong></li>
+                <li class="register-steps__line @(registerStep >= 3 ? "is-active" : null)" aria-hidden="true"></li>
+                <li class="@GetStepClass(3)"><span>3</span><strong>Verificación</strong></li>
+            </ol>
+
+            @if (registerStep == 1)
+            {
+                <div class="auth-view">
+                    <header class="auth-heading">
+                        <h1>Crea tu cuenta</h1>
+                        <p>Empieza a registrar y comprender mejor tu bienestar.</p>
+                    </header>
+
+                    <EditForm Model="registerModel" OnValidSubmit="ContinueToPlan" class="auth-form">
+                        <DataAnnotationsValidator />
+
+                        <div class="auth-field">
+                            <label for="register-name">Nombre completo</label>
+                            <div class="auth-input-wrap">
+                                <svg class="auth-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="8" r="3.5" />
+                                    <path d="M5 20c.5-5 2.8-7.5 7-7.5s6.5 2.5 7 7.5" />
+                                </svg>
+                                <InputText id="register-name"
+                                           class="form-input auth-input auth-input-icon"
+                                           autocomplete="name"
+                                           placeholder="Tu nombre y apellidos"
+                                           @bind-Value="registerModel.FullName" />
+                            </div>
+                            <ValidationMessage For="@(() => registerModel.FullName)" />
+                        </div>
+
+                        <div class="auth-field">
+                            <label for="register-email">Correo electrónico</label>
+                            <div class="auth-input-wrap">
+                                <svg class="auth-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                                    <path d="m4 7 8 6 8-6" />
+                                </svg>
+                                <InputText id="register-email"
+                                           class="form-input auth-input auth-input-icon"
+                                           type="email"
+                                           autocomplete="email"
+                                           placeholder="correo@ejemplo.com"
+                                           @bind-Value="registerModel.Email" />
+                            </div>
+                            <ValidationMessage For="@(() => registerModel.Email)" />
+                        </div>
+
+                        <div class="auth-field">
+                            <label for="register-password">Contraseña</label>
+                            <div class="auth-input-wrap">
+                                <svg class="auth-field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="11" rx="2" />
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                                </svg>
+                                <InputText id="register-password"
+                                           class="form-input auth-input auth-input-icon"
+                                           type="@(showRegisterPassword ? "text" : "password")"
+                                           autocomplete="new-password"
+                                           placeholder="Mínimo 8 caracteres"
+                                           @bind-Value="registerModel.Password" />
+                                <button class="auth-password-toggle"
+                                        type="button"
+                                        aria-label="@(showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña")"
+                                        aria-pressed="@showRegisterPassword"
+                                        @onclick="() => showRegisterPassword = !showRegisterPassword">
+                                    @if (showRegisterPassword)
+                                    {
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
+                                        </svg>
+                                    }
+                                    else
+                                    {
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
+                                            <circle cx="12" cy="12" r="2.5" />
+                                        </svg>
+                                    }
+                                </button>
+                            </div>
+                            <ValidationMessage For="@(() => registerModel.Password)" />
+                        </div>
+
+                        <button class="auth-primary auth-primary--sage" type="submit">Continuar</button>
+                    </EditForm>
+                </div>
+            }
+            else if (registerStep == 2)
+            {
+                <div class="auth-view auth-view--plans">
+                    <header class="auth-heading">
+                        <h1>Elige tu plan</h1>
+                        <p>Selecciona la opción que mejor se adapta a tus necesidades.</p>
+                    </header>
+
+                    <EditForm Model="paymentModel" OnSubmit="CompletePlanStep" class="auth-form">
+                        <DataAnnotationsValidator />
+
+                        <div class="auth-plan-grid" role="radiogroup" aria-label="Planes disponibles">
+                            @foreach (var plan in Plans)
+                            {
+                                <button class="@GetPlanCardClass(plan)"
+                                        type="button"
+                                        role="radio"
+                                        aria-checked="@(selectedPlan == plan.Name)"
+                                        @onclick="() => SelectPlan(plan.Name)">
+                                    <span class="plan-radio" aria-hidden="true"></span>
+                                    <strong>@plan.Name</strong>
+                                    <span class="plan-price">@plan.Price</span>
+                                    <small>@plan.Description</small>
+                                </button>
+                            }
+                        </div>
+
+                        <section class="plan-feature-box @GetSelectedPlanToneClass()" aria-labelledby="selected-plan-title">
+                            <header>
+                                <div>
+                                    <span>Plan seleccionado</span>
+                                    <h2 id="selected-plan-title">@SelectedPlanOption.Name</h2>
+                                </div>
+                                <strong>@SelectedPlanOption.Price</strong>
+                            </header>
+                            <ul>
+                                @foreach (var feature in SelectedPlanOption.Features)
+                                {
+                                    <li><span aria-hidden="true">✓</span>@feature</li>
+                                }
+                            </ul>
+                        </section>
+
+                        @if (selectedPlan != "Gratuito")
+                        {
+                            <section class="registration-payment" aria-labelledby="registration-payment-title">
+                                <h2 id="registration-payment-title">Datos de pago</h2>
+
+                                <div class="auth-field">
+                                    <label for="payment-card-number">Número de tarjeta</label>
+                                    <InputText id="payment-card-number"
+                                               class="form-input"
+                                               inputmode="numeric"
+                                               maxlength="16"
+                                               autocomplete="cc-number"
+                                               placeholder="1234567890123456"
+                                               @bind-Value="paymentModel.CardNumber" />
+                                    <ValidationMessage For="@(() => paymentModel.CardNumber)" />
+                                </div>
+
+                                <div class="payment-row">
+                                    <div class="auth-field">
+                                        <label for="payment-expiry">MM/AA</label>
+                                        <InputText id="payment-expiry"
+                                                   class="form-input"
+                                                   inputmode="numeric"
+                                                   maxlength="5"
+                                                   autocomplete="cc-exp"
+                                                   placeholder="MM/AA"
+                                                   @bind-Value="paymentModel.Expiry" />
+                                        <ValidationMessage For="@(() => paymentModel.Expiry)" />
+                                    </div>
+                                    <div class="auth-field">
+                                        <label for="payment-cvv">CVV</label>
+                                        <InputText id="payment-cvv"
+                                                   class="form-input"
+                                                   type="password"
+                                                   inputmode="numeric"
+                                                   maxlength="4"
+                                                   autocomplete="cc-csc"
+                                                   placeholder="123"
+                                                   @bind-Value="paymentModel.Cvv" />
+                                        <ValidationMessage For="@(() => paymentModel.Cvv)" />
+                                    </div>
+                                </div>
+                            </section>
+                        }
+
+                        <div class="register-actions">
+                            <button class="auth-back-button" type="button" @onclick="BackToData">← Atrás</button>
+                            <button class="plan-primary @GetSelectedPlanToneClass()" type="submit">@GetPlanActionText()</button>
+                        </div>
+                    </EditForm>
+                </div>
+            }
+            else
+            {
+                <div class="auth-view auth-view--verification">
+                    <header class="auth-heading">
+                        <span class="verification-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                <path d="m4 7 8 6 8-6" />
+                            </svg>
+                        </span>
+                        <h1>Verifica tu correo</h1>
+                        <p>Hemos enviado un código de 6 dígitos a <strong>@registerModel.Email</strong>.</p>
+                    </header>
+
+                    <EditForm Model="verificationModel" OnValidSubmit="VerifyAndFinish" class="auth-form">
+                        <DataAnnotationsValidator />
+
+                        <div class="auth-field verification-field">
+                            <label for="verification-code">Código de verificación</label>
+                            <InputText id="verification-code"
+                                       class="form-input verification-input"
+                                       inputmode="numeric"
+                                       autocomplete="one-time-code"
+                                       maxlength="6"
+                                       placeholder="000000"
+                                       @bind-Value="verificationModel.Code" />
+                            <ValidationMessage For="@(() => verificationModel.Code)" />
+                        </div>
+
+                        <button class="auth-primary auth-primary--sage"
+                                type="submit"
+                                disabled="@isSubmitting"
+                                aria-busy="@isSubmitting">
+                            @(isSubmitting ? "Finalizando..." : "Verificar y finalizar")
+                        </button>
+                    </EditForm>
+
+                    <div class="resend-code">
+                        <span>¿No recibiste el código?</span>
+                        <button type="button" @onclick="ResendVerificationCode">Reenviar</button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(verificationNotice))
+                    {
+                        <div class="auth-alert auth-alert--success" role="status">@verificationNotice</div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "plan")]
+    public string? RequestedPlan { get; set; }
+
+    private readonly LoginModel loginModel = new();
+    private readonly RegisterModel registerModel = new();
+    private readonly PaymentModel paymentModel = new();
+    private readonly VerificationModel verificationModel = new();
+
+    private bool isLoginView = true;
+    private int registerStep = 1;
+    private string selectedPlan = "Gratuito";
+    private bool showLoginPassword;
+    private bool showRegisterPassword;
+    private bool isSubmitting;
+    private bool showSuccessMessage;
+    private string? authError;
+    private string? verificationNotice;
+
+    private static readonly IReadOnlyList<PlanOption> Plans =
+    [
+        new("Gratuito", "$0/mes", "Lo esencial para comenzar", "free",
+        ["Registro básico de bienestar", "Resumen semanal", "Acceso a la comunidad"]),
+        new("Individual", "$4.99/mes", "Seguimiento personal completo", "individual",
+        ["Registros ilimitados", "Análisis de patrones", "Recomendaciones personalizadas"]),
+        new("Familiar", "$8.99/mes", "Bienestar para quienes más quieres", "family",
+        ["Hasta 5 miembros", "Tokens de vinculación", "Panel y alertas familiares"]),
+        new("Profesional", "$19.99/mes", "Herramientas clínicas avanzadas", "professional",
+        ["Hasta 20 pacientes", "Reportes clínicos", "Panel de gestión profesional"])
+    ];
+
+    private PlanOption SelectedPlanOption => Plans.First(plan => plan.Name == selectedPlan);
+
+    protected override void OnParametersSet()
+    {
+        var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        isLoginView = !path.Equals("/register", StringComparison.OrdinalIgnoreCase);
+
+        if (!isLoginView && !string.IsNullOrWhiteSpace(RequestedPlan))
+        {
+            selectedPlan = RequestedPlan.Trim().ToLowerInvariant() switch
+            {
+                "individual" => "Individual",
+                "family" or "familiar" => "Familiar",
+                "professional" or "profesional" => "Profesional",
+                _ => "Gratuito"
+            };
+        }
+    }
+
+    private void ShowLogin()
+    {
+        isLoginView = true;
+        authError = null;
+        Navigation.NavigateTo("/login", replace: true);
+    }
+
+    private void ShowRegister()
+    {
+        isLoginView = false;
+        registerStep = 1;
+        authError = null;
+        showSuccessMessage = false;
+        Navigation.NavigateTo("/register", replace: true);
+    }
+
+    private void ContinueToPlan()
+    {
+        authError = null;
+        registerStep = 2;
+    }
+
+    private void BackToData()
+    {
+        registerStep = 1;
+    }
+
+    private void CompletePlanStep(EditContext paymentContext)
+    {
+        if (selectedPlan == "Gratuito" || paymentContext.Validate())
+        {
+            authError = null;
+            registerStep = 3;
+        }
+    }
+
+    private void SelectPlan(string planName)
+    {
+        selectedPlan = planName;
+    }
+
+    private string GetAuthCardClass() => !isLoginView && registerStep == 2
+        ? "auth-card auth-card--wide"
+        : "auth-card";
+
+    private string GetStepClass(int step) => registerStep >= step
+        ? "register-step is-active"
+        : "register-step";
+
+    private string GetPlanCardClass(PlanOption plan) =>
+        $"auth-plan-card plan-tone--{plan.Tone}{(selectedPlan == plan.Name ? " is-selected" : string.Empty)}";
+
+    private string GetSelectedPlanToneClass() => $"plan-tone--{SelectedPlanOption.Tone}";
+
+    private string GetPlanActionText() => selectedPlan == "Gratuito"
+        ? "Crear cuenta gratis"
+        : $"Suscribirse - {SelectedPlanOption.Price}";
+
+    private async Task HandleLogin()
+    {
+        isSubmitting = true;
+        authError = null;
+
+        try
+        {
+            await AuthService.LoginAsync(new LoginRequest
+            {
+                Email = loginModel.Email,
+                Password = loginModel.Password
+            });
+            Navigation.NavigateTo("/dashboard");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            authError = "Correo o contraseña incorrectos.";
+        }
+        catch (Exception)
+        {
+            authError = "No pudimos iniciar sesión. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task VerifyAndFinish()
+    {
+        isSubmitting = true;
+        authError = null;
+
+        try
+        {
+            await AuthService.RegisterAsync(new RegisterRequest
+            {
+                FullName = registerModel.FullName,
+                Email = registerModel.Email,
+                Password = registerModel.Password,
+                PlanId = SelectedPlanOption.Tone
+            });
+            isLoginView = true;
+            registerStep = 1;
+            showSuccessMessage = true;
+            Navigation.NavigateTo("/login", replace: true);
+        }
+        catch (Exception ex)
+        {
+            authError = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task ResendVerificationCode()
+    {
+        verificationNotice = $"Enviamos un nuevo código a {registerModel.Email}.";
+        await Task.Delay(2500);
+        verificationNotice = null;
+    }
+
+    public sealed class LoginModel
+    {
+        [Required(ErrorMessage = "El correo es obligatorio.")]
+        [EmailAddress(ErrorMessage = "Introduce un correo electrónico válido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseña es obligatoria.")]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public sealed class RegisterModel
+    {
+        [Required(ErrorMessage = "El nombre es obligatorio.")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 50 caracteres.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El correo es obligatorio.")]
+        [EmailAddress(ErrorMessage = "Introduce un correo electrónico válido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La contraseña es obligatoria.")]
+        [StringLength(30, MinimumLength = 8, ErrorMessage = "La contraseña debe tener mínimo 8 caracteres.")]
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public sealed class PaymentModel
+    {
+        [Required(ErrorMessage = "El número de tarjeta es obligatorio.")]
+        [RegularExpression(@"^\d{16}$", ErrorMessage = "Introduce los 16 dígitos de la tarjeta.")]
+        public string CardNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La fecha de vencimiento es obligatoria.")]
+        [RegularExpression(@"^(0[1-9]|1[0-2])/\d{2}$", ErrorMessage = "Usa el formato MM/AA.")]
+        public string Expiry { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El CVV es obligatorio.")]
+        [RegularExpression(@"^\d{3,4}$", ErrorMessage = "El CVV debe tener 3 o 4 dígitos.")]
+        public string Cvv { get; set; } = string.Empty;
+    }
+
+    public sealed class VerificationModel
+    {
+        [Required(ErrorMessage = "Introduce el código de verificación.")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "El código debe tener 6 dígitos.")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "El código debe contener solo números.")]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    private sealed record PlanOption(
+        string Name,
+        string Price,
+        string Description,
+        string Tone,
+        IReadOnlyList<string> Features);
+}

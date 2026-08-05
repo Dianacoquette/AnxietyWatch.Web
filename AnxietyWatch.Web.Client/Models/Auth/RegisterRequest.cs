@@ -1,0 +1,27 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace AnxietyWatch.Web.Client.Models.Auth;
+
+public class RegisterRequest
+{
+    [Required(ErrorMessage = "El nombre es obligatorio.")]
+    [StringLength(60, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 60 caracteres.")]
+    [JsonPropertyName("fullName")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "El correo es obligatorio.")]
+    [EmailAddress(ErrorMessage = "Formato de correo inválido.")]
+    [JsonPropertyName("email")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "La contraseña es obligatoria.")]
+    [JsonPropertyName("password")]
+    public string Password { get; set; } = string.Empty;
+
+    [JsonPropertyName("planId")]
+    public string PlanId { get; set; } = "free";
+
+    [JsonPropertyName("billingCycle")]
+    public string BillingCycle { get; set; } = "monthly";
+}

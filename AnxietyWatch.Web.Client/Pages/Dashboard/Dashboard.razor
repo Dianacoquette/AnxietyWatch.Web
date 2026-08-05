@@ -1,0 +1,134 @@
+@page "/dashboard"
+@layout DashboardLayout
+@rendermode InteractiveWebAssembly
+@using System.Globalization
+
+<PageTitle>Resumen | AnxietyWatch</PageTitle>
+
+<section class="dashboard-page" aria-labelledby="dashboard-title">
+    <header class="page-header">
+        <div>
+            <h1 id="dashboard-title">Bienvenido, Alex 👋</h1>
+            <p>Plan activo: Familiar <span aria-hidden="true">·</span> Hoy es @CurrentDate.</p>
+        </div>
+    </header>
+
+    <section class="kpi-grid" aria-label="Métricas principales">
+        <article class="kpi-card">
+            <div class="kpi-card__top">
+                <span class="kpi-icon kpi-icon--sage" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 12h3l2-5 3.5 10 2.5-6 1.5 3H20" />
+                    </svg>
+                </span>
+                <span class="kpi-trend" aria-label="Tendencia positiva">↗</span>
+            </div>
+            <strong class="kpi-value">79</strong>
+            <div class="kpi-meta">
+                <strong>Moderado</strong>
+                <span>Nivel de ansiedad</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__top">
+                <span class="kpi-icon kpi-icon--teal" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="5" y="3" width="14" height="18" rx="3" />
+                        <path d="M9 8h6m-6 4h6m-6 4h4" />
+                    </svg>
+                </span>
+                <span class="kpi-trend" aria-label="Tendencia positiva">↗</span>
+            </div>
+            <strong class="kpi-value">12</strong>
+            <div class="kpi-meta">
+                <strong>Sin límite</strong>
+                <span>Registros esta semana</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__top">
+                <span class="kpi-icon kpi-icon--mint" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M13 3s1 4-2 6c-2-2-4-1-5 1-2 4 1 9 6 11 5-2 8-6 6-11-.8-2-2.7-3.4-5-7Z" />
+                        <path d="M9.5 15c0-1.8 1.1-3.2 2.5-4 1.4.8 2.5 2.2 2.5 4a2.5 2.5 0 0 1-5 0Z" />
+                    </svg>
+                </span>
+                <span class="kpi-trend" aria-label="Tendencia positiva">↗</span>
+            </div>
+            <strong class="kpi-value">7 días</strong>
+            <div class="kpi-meta">
+                <strong>¡Sigue así!</strong>
+                <span>Racha actual</span>
+            </div>
+        </article>
+
+        <article class="kpi-card">
+            <div class="kpi-card__top">
+                <span class="kpi-icon kpi-icon--sand" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 20c-4.5 0-7-2.4-8-6.8 3.8-.4 6.5 1 8 4.1 1.5-3.1 4.2-4.5 8-4.1-1 4.4-3.5 6.8-8 6.8Z" />
+                        <path d="M12 17.3C8.8 15 8.2 11.5 12 6c3.8 5.5 3.2 9-0 11.3ZM6.8 9.5c2.1.5 3.8 1.6 5.2 3.5 1.4-1.9 3.1-3 5.2-3.5" />
+                    </svg>
+                </span>
+                <span class="kpi-trend" aria-label="Tendencia positiva">↗</span>
+            </div>
+            <strong class="kpi-value">21</strong>
+            <div class="kpi-meta">
+                <strong>Biblioteca completa</strong>
+                <span>Ejercicios completados</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="history-card" aria-labelledby="history-title">
+        <header class="history-header">
+            <div>
+                <h2 id="history-title">Historial de ansiedad</h2>
+                <p>Consulta la evolución de tus últimos registros.</p>
+            </div>
+            <button class="period-button" type="button" title="Periodo de visualización">
+                Últimos 7 días
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m8 10 4 4 4-4" />
+                </svg>
+            </button>
+        </header>
+
+        <figure class="history-chart" aria-labelledby="history-title">
+            <figcaption class="visually-hidden">
+                Gráfico vacío del nivel de ansiedad durante los últimos siete días.
+            </figcaption>
+
+            <div class="chart-layout">
+                <div class="y-axis" aria-hidden="true">
+                    <span>100</span>
+                    <span>75</span>
+                    <span>50</span>
+                    <span>25</span>
+                    <span>0</span>
+                </div>
+
+                <div class="chart-plot">
+                    <div class="chart-grid" aria-hidden="true"></div>
+                    <div class="x-axis" aria-hidden="true">
+                        <span>L</span>
+                        <span>M</span>
+                        <span>X</span>
+                        <span>J</span>
+                        <span>V</span>
+                        <span>S</span>
+                        <span>D</span>
+                    </div>
+                </div>
+            </div>
+        </figure>
+    </section>
+</section>
+
+@code {
+    private static readonly CultureInfo SpanishCulture = CultureInfo.GetCultureInfo("es-ES");
+
+    private string CurrentDate => DateTime.Now.ToString("dddd, d 'de' MMMM 'de' yyyy", SpanishCulture);
+}

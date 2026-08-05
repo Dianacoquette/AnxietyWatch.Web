@@ -1,0 +1,588 @@
+.plan-page {
+    --sage-700: #3f6f62;
+    --sage-500: #5e8b7e;
+    --sage-100: #e9f2ee;
+    --ink: #26332f;
+    --muted: #77817d;
+    --line: #e5ebe8;
+    --purple: #7866a8;
+}
+
+.page-header {
+    margin-bottom: 1.75rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.035em;
+}
+
+.current-plan-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(2rem, 5vw, 5rem);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid rgba(224, 232, 228, 0.95);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at 92% 20%, rgba(94, 139, 126, 0.12), transparent 26%),
+        #fdfefd;
+    box-shadow: 0 9px 28px rgba(55, 78, 69, 0.055);
+}
+
+.current-plan-content {
+    min-width: 0;
+}
+
+.active-plan-badge {
+    display: inline-flex;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: #e8f2ff;
+    color: #4f75a3;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.current-plan-heading {
+    margin-top: 1.25rem;
+}
+
+.current-plan-heading h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.1rem;
+}
+
+.current-plan-price,
+.option-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.current-plan-price {
+    margin-top: 0.5rem;
+}
+
+.current-plan-price strong {
+    color: var(--ink);
+    font-size: clamp(2.2rem, 5vw, 3.35rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+}
+
+.current-plan-price span,
+.option-price span {
+    color: var(--muted);
+    font-size: 0.76rem;
+}
+
+.current-plan-heading > p {
+    margin: 0.8rem 0 0;
+    color: #5f6b65;
+    font-size: 0.9rem;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem 1.5rem;
+    max-width: 720px;
+    margin: 1.75rem 0 0;
+    padding: 1.4rem 0 0;
+    border-top: 1px solid var(--line);
+    color: #56625c;
+    font-size: 0.8rem;
+    list-style: none;
+}
+
+.benefits-grid li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.benefits-grid li span {
+    display: grid;
+    width: 21px;
+    height: 21px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--sage-100);
+    color: var(--sage-700);
+    font-size: 0.68rem;
+    font-weight: 900;
+}
+
+.current-plan-visual {
+    display: grid;
+    width: clamp(120px, 14vw, 170px);
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: 50%;
+    background: #edf4ef;
+    color: var(--sage-700);
+}
+
+.current-plan-visual svg {
+    width: 48%;
+    height: 48%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+}
+
+.change-plan-section {
+    margin-top: 2.5rem;
+}
+
+.section-header {
+    margin-bottom: 1.25rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+}
+
+.section-header p {
+    margin: 0.45rem 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.option-card {
+    display: flex;
+    min-width: 0;
+    min-height: 285px;
+    flex-direction: column;
+    padding: 1.5rem;
+    border: 1px solid rgba(224, 232, 228, 0.95);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 7px 22px rgba(55, 78, 69, 0.045);
+}
+
+.option-card--professional {
+    border-color: rgba(120, 102, 168, 0.32);
+}
+
+.option-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.option-card__header h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1rem;
+}
+
+.change-badge {
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+}
+
+.change-badge--downgrade {
+    background: #eef1ef;
+    color: #737d78;
+}
+
+.change-badge--upgrade {
+    background: #eeeafd;
+    color: var(--purple);
+}
+
+.option-price {
+    margin-top: 1.5rem;
+}
+
+.option-price strong {
+    color: var(--ink);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+}
+
+.option-price--purple strong {
+    color: var(--purple);
+}
+
+.option-card > p {
+    margin: 0.9rem 0 1.5rem;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.6;
+}
+
+.plan-action {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: auto;
+    padding: 0.65rem 1rem;
+    border: none;
+    border-radius: 9px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 800;
+    transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+.plan-action:hover {
+    filter: brightness(0.94);
+    transform: translateY(-1px);
+}
+
+.plan-action:focus-visible {
+    outline: 3px solid rgba(94, 139, 126, 0.28);
+    outline-offset: 3px;
+}
+
+.plan-action--dark {
+    background: #4c5651;
+}
+
+.plan-action--sage {
+    background: var(--sage-500);
+}
+
+.plan-action--purple {
+    background: var(--purple);
+}
+
+.upgrade-overlay {
+    position: fixed;
+    z-index: 200;
+    inset: 0;
+    display: grid;
+    overflow-y: auto;
+    place-items: center;
+    padding: 1.5rem;
+    background: rgba(24, 29, 27, 0.55);
+    backdrop-filter: blur(4px);
+}
+
+.upgrade-modal {
+    --modal-accent: var(--purple);
+    --modal-soft: #f4f0ff;
+    --modal-border: #ddd5f5;
+    width: min(100%, 450px);
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 28px 80px rgba(27, 34, 31, 0.28);
+}
+
+.upgrade-modal--free {
+    --modal-accent: #4c5651;
+    --modal-soft: #f1f3f2;
+    --modal-border: #d8ddda;
+}
+
+.upgrade-modal--individual {
+    --modal-accent: var(--sage-500);
+    --modal-soft: var(--sage-100);
+    --modal-border: #cdded3;
+}
+
+.upgrade-modal--professional {
+    --modal-accent: var(--purple);
+    --modal-soft: #f4f0ff;
+    --modal-border: #ddd5f5;
+}
+
+.upgrade-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.upgrade-modal__header h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+.upgrade-modal__close {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: #fff;
+    color: #7c8681;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.upgrade-modal__close:hover {
+    background: #f6f7f6;
+    color: var(--ink);
+}
+
+.plan-comparison {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1.5rem;
+}
+
+.comparison-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.65rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.comparison-card--current {
+    background: #fff;
+}
+
+.comparison-card--new {
+    border-color: var(--modal-border);
+    background: var(--modal-soft);
+}
+
+.comparison-label {
+    color: #8a938f;
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.comparison-label--accent {
+    color: var(--modal-accent);
+}
+
+.comparison-badge {
+    margin-top: 0.55rem;
+    padding: 0.3rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+}
+
+.comparison-badge--current {
+    background: #e8f2f0;
+    color: #436f65;
+}
+
+.comparison-badge--new {
+    background: var(--modal-accent);
+    color: #fff;
+}
+
+.comparison-card p {
+    display: flex;
+    align-items: baseline;
+    gap: 0.15rem;
+    margin: 0.65rem 0 0;
+}
+
+.comparison-card p strong {
+    color: var(--ink);
+    font-size: 1.05rem;
+}
+
+.comparison-card--new p strong {
+    color: var(--modal-accent);
+}
+
+.comparison-card p span {
+    color: #89928e;
+    font-size: 0.6rem;
+}
+
+.comparison-arrow {
+    color: #b8bebb;
+    font-size: 1.25rem;
+}
+
+.upgrade-benefits {
+    margin-top: 1.5rem;
+}
+
+.upgrade-benefits h3 {
+    margin: 0;
+    color: #4e5853;
+    font-size: 0.82rem;
+}
+
+.upgrade-benefits ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    color: #58635d;
+    font-size: 0.74rem;
+    list-style: none;
+}
+
+.upgrade-benefits li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.upgrade-benefits li span {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--modal-soft);
+    color: var(--modal-accent);
+    font-size: 0.65rem;
+    font-weight: 900;
+}
+
+.upgrade-benefits > p {
+    margin: 0.8rem 0 0 1.65rem;
+    color: #a0a7a3;
+    font-size: 0.68rem;
+}
+
+.upgrade-modal__actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+}
+
+.upgrade-button {
+    display: inline-flex;
+    min-height: 44px;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 0.85rem;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.upgrade-button--cancel {
+    border: 1px solid #d8ddda;
+    background: #fff;
+    color: var(--ink);
+}
+
+.upgrade-button--confirm {
+    border: 1px solid var(--modal-accent);
+    background: var(--modal-accent);
+    color: #fff;
+}
+
+.upgrade-button:hover {
+    filter: brightness(0.96);
+}
+
+.upgrade-modal__close:focus-visible,
+.upgrade-button:focus-visible {
+    outline: 3px solid var(--modal-border);
+    outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+    .current-plan-card {
+        grid-template-columns: 1fr;
+    }
+
+    .current-plan-visual {
+        grid-row: 1;
+        width: 110px;
+    }
+
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .option-card {
+        min-height: 255px;
+    }
+}
+
+@media (max-width: 560px) {
+    .benefits-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .current-plan-card,
+    .option-card {
+        padding: 1.25rem;
+    }
+
+    .upgrade-overlay {
+        align-items: end;
+        padding: 0;
+    }
+
+    .upgrade-modal {
+        max-height: 92vh;
+        padding: 1.4rem 1rem;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .plan-comparison {
+        grid-template-columns: 1fr;
+    }
+
+    .comparison-arrow {
+        transform: rotate(90deg);
+        justify-self: center;
+    }
+
+    .upgrade-modal__actions {
+        flex-direction: column-reverse;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plan-action {
+        transition: none;
+    }
+
+    .plan-action:hover {
+        transform: none;
+    }
+}

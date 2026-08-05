@@ -1,0 +1,373 @@
+@page "/dashboard/tokens"
+@layout DashboardLayout
+@rendermode InteractiveWebAssembly
+@inject NavigationManager Navigation
+
+<PageTitle>Tokens de vinculación | AnxietyWatch</PageTitle>
+
+<section class="tokens-page" aria-labelledby="tokens-page-title">
+    <header class="page-header">
+        <span class="page-header__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M9.5 14.5 14.5 9M7 17l-1.5 1.5a3.5 3.5 0 0 1-5-5L5 9a3.5 3.5 0 0 1 5 0m7 6a3.5 3.5 0 0 0 5 0l1.5-1.5a3.5 3.5 0 0 0-5-5L14 13a3.5 3.5 0 0 0 0 5" />
+            </svg>
+        </span>
+        <div>
+            <h1 id="tokens-page-title">Tokens de vinculación</h1>
+            <p>Gestiona los códigos de vinculación de tu plan Familiar.</p>
+        </div>
+    </header>
+
+    <div class="tokens-layout">
+        <div class="tokens-main">
+            <section class="metrics-grid" aria-label="Resumen de tokens">
+                <article class="metric-card">
+                    <span class="metric-icon metric-icon--sage" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5" />
+                        </svg>
+                    </span>
+                    <div><span>Límite del plan</span><strong>5 Tokens</strong></div>
+                </article>
+
+                <article class="metric-card">
+                    <span class="metric-icon metric-icon--teal" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="8" r="3" />
+                            <path d="M5 20c.5-5 2.8-7.5 7-7.5s6.5 2.5 7 7.5" />
+                        </svg>
+                    </span>
+                    <div><span>Utilizados</span><strong>3 de 5</strong></div>
+                </article>
+
+                <article class="metric-card">
+                    <span class="metric-icon metric-icon--mint" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 5v14M5 12h14" />
+                            <circle cx="12" cy="12" r="9" />
+                        </svg>
+                    </span>
+                    <div><span>Disponibles</span><strong>2 tokens</strong></div>
+                </article>
+
+                <article class="metric-card metric-card--usage" aria-label="Uso de tokens: 60 por ciento">
+                    <svg class="usage-ring" viewBox="0 0 42 42" aria-hidden="true">
+                        <circle class="usage-ring__track" cx="21" cy="21" r="15.9" pathLength="100" />
+                        <circle class="usage-ring__value" cx="21" cy="21" r="15.9" pathLength="100" stroke-dasharray="60 40" />
+                        <text x="21" y="23">60%</text>
+                    </svg>
+                    <div><span>Uso del plan</span><strong>3 vinculados</strong></div>
+                </article>
+            </section>
+
+            <aside class="token-alert" role="note" aria-label="Información importante sobre tokens">
+                <span aria-hidden="true">!</span>
+                <p>Cada token solo puede usarse una vez. Comparte el token de forma segura.</p>
+            </aside>
+
+            <section class="tokens-table-card" aria-labelledby="tokens-table-title">
+                <header class="table-header">
+                    <div>
+                        <h2 id="tokens-table-title">Tokens del plan</h2>
+                        <p>Códigos generados para vincular a los miembros de tu plan.</p>
+                    </div>
+                    <button class="new-token-action" type="button" @onclick="OpenTokenModal">
+                        <span aria-hidden="true">+</span>
+                        Nuevo token
+                    </button>
+                </header>
+
+                <div class="table-scroll">
+                    <table>
+                        <caption class="visually-hidden">Listado de tokens de vinculación</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Tipo</th>
+                                <th scope="col">Código</th>
+                                <th scope="col">Creado</th>
+                                <th scope="col">Usado por</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td><td>Miembro</td><td><code>AW-7K2P9D</code></td><td>12/07/2026</td><td>Lucía Rivera</td>
+                                <td><span class="status-badge status-badge--used">Usado</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" aria-label="Copiar token AW-7K2P9D" title="Copiar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Regenerar token AW-7K2P9D" title="Regenerar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Eliminar token AW-7K2P9D" title="Eliminar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td><td>Miembro</td><td><code>AW-4M8Q2L</code></td><td>15/07/2026</td><td>Diego Rivera</td>
+                                <td><span class="status-badge status-badge--used">Usado</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" aria-label="Copiar token AW-4M8Q2L" title="Copiar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Regenerar token AW-4M8Q2L" title="Regenerar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Eliminar token AW-4M8Q2L" title="Eliminar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>3</td><td>Cuidador</td><td><code>AW-9X3N6R</code></td><td>18/07/2026</td><td>Elena Ruiz</td>
+                                <td><span class="status-badge status-badge--used">Usado</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" aria-label="Copiar token AW-9X3N6R" title="Copiar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Regenerar token AW-9X3N6R" title="Regenerar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Eliminar token AW-9X3N6R" title="Eliminar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>4</td><td>Miembro</td><td><code>AW-2B7H5T</code></td><td>27/07/2026</td><td>—</td>
+                                <td><span class="status-badge status-badge--pending">Pendiente</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" aria-label="Copiar token AW-2B7H5T" title="Copiar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Regenerar token AW-2B7H5T" title="Regenerar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Eliminar token AW-2B7H5T" title="Eliminar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>5</td><td>Miembro</td><td><code>AW-6C1J8V</code></td><td>30/07/2026</td><td>—</td>
+                                <td><span class="status-badge status-badge--available">Disponible</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" aria-label="Copiar token AW-6C1J8V" title="Copiar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Regenerar token AW-6C1J8V" title="Regenerar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" /></svg>
+                                        </button>
+                                        <button type="button" aria-label="Eliminar token AW-6C1J8V" title="Eliminar">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <footer class="table-footer">
+                    <span>Los tokens sin usar expiran 30 días después de su creación.</span>
+                    <span>Renovación: @DateTime.Today.AddMonths(1).ToString("dd/MM/yyyy")</span>
+                </footer>
+            </section>
+        </div>
+
+        <aside class="tokens-sidebar" aria-label="Información sobre tokens">
+            <section class="info-card" aria-labelledby="how-tokens-title">
+                <h2 id="how-tokens-title">¿Cómo funciona?</h2>
+                <ol class="how-list">
+                    <li><span>1</span><p>Genera un token de vinculación.</p></li>
+                    <li><span>2</span><p>Compártelo de forma privada.</p></li>
+                    <li><span>3</span><p>El familiar ingresa el código.</p></li>
+                    <li><span>4</span><p>Su cuenta se vincula al plan.</p></li>
+                    <li><span>5</span><p>El token queda invalidado.</p></li>
+                </ol>
+            </section>
+
+            <section class="info-card security-card" aria-labelledby="security-title">
+                <span class="security-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 3 5 6v5c0 4.8 2.8 8.2 7 10 4.2-1.8 7-5.2 7-10V6l-7-3Z" />
+                        <path d="m9 12 2 2 4-4" />
+                    </svg>
+                </span>
+                <div>
+                    <h2 id="security-title">Seguridad</h2>
+                    <p>Cada código es único, de un solo uso y tiene una fecha de expiración para proteger la vinculación de tu familia.</p>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    @if (showTokenModal)
+    {
+        <div class="token-modal-overlay" role="presentation" @onclick="CloseTokenModal">
+            <section class="token-modal"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="token-modal-title"
+                     @onclick:stopPropagation="true">
+                <header class="token-modal__header">
+                    <span class="token-modal__key" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="8" cy="12" r="4" />
+                            <path d="M12 12h9m-3 0v3m-3-3v2" />
+                        </svg>
+                    </span>
+                    <h2 id="token-modal-title">Nuevo token</h2>
+                    <button type="button" aria-label="Cerrar modal" @onclick="CloseTokenModal">×</button>
+                </header>
+
+                <div class="token-usage-banner">
+                    <span>Tokens usados</span>
+                    <strong>@(isLimitReached ? "5 de 5" : "1 de 20")</strong>
+                </div>
+
+                @if (!isLimitReached)
+                {
+                    <section class="token-type-section" aria-labelledby="token-type-title">
+                        <h3 id="token-type-title">Tipo de token</h3>
+                        <div class="token-type-options" role="radiogroup" aria-labelledby="token-type-title">
+                            <button type="button"
+                                    role="radio"
+                                    aria-checked="@(selectedTokenType == MobileTokenType)"
+                                    class="@GetTokenTypeClass(MobileTokenType)"
+                                    @onclick="() => SelectTokenType(MobileTokenType)">
+                                <span class="radio-indicator" aria-hidden="true"></span>
+                                <span><strong>App Móvil (yo)</strong><small>Vincula tu dispositivo personal</small></span>
+                            </button>
+                            <button type="button"
+                                    role="radio"
+                                    aria-checked="@(selectedTokenType == PatientTokenType)"
+                                    class="@GetTokenTypeClass(PatientTokenType)"
+                                    @onclick="() => SelectTokenType(PatientTokenType)">
+                                <span class="radio-indicator" aria-hidden="true"></span>
+                                <span><strong>Paciente</strong><small>Invita a un paciente a vincularse</small></span>
+                            </button>
+                            <button type="button"
+                                    role="radio"
+                                    aria-checked="@(selectedTokenType == CollaboratorTokenType)"
+                                    class="@GetTokenTypeClass(CollaboratorTokenType)"
+                                    @onclick="() => SelectTokenType(CollaboratorTokenType)">
+                                <span class="radio-indicator" aria-hidden="true"></span>
+                                <span><strong>Colaborador</strong><small>Comparte acceso con tu equipo</small></span>
+                            </button>
+                        </div>
+                    </section>
+
+                    @if (!isTokenGenerated)
+                    {
+                        <button class="generate-token-button" type="button" @onclick="GenerateToken">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 7v5h-5M4 17v-5h5m9.5-3A7 7 0 0 0 6 7m-.5 8A7 7 0 0 0 18 17" />
+                            </svg>
+                            Generar código
+                        </button>
+                    }
+                    else
+                    {
+                        <section class="generated-token" aria-labelledby="generated-token-title">
+                            <h3 id="generated-token-title">Token generado</h3>
+                            <div class="generated-token__field">
+                                <code>@generatedToken</code>
+                                <button type="button" aria-label="Copiar token generado">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <rect x="8" y="8" width="11" height="11" rx="2" />
+                                        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                                    </svg>
+                                    Copiar
+                                </button>
+                            </div>
+                            <p>Este token expira a los 30 días si no se usa.</p>
+                        </section>
+                    }
+
+                    <footer class="token-modal__actions">
+                        <button class="token-modal-button token-modal-button--cancel" type="button" @onclick="CloseTokenModal">Cancelar</button>
+                        <button class="token-modal-button token-modal-button--add" type="button" @onclick="CloseTokenModal">Agregar token</button>
+                    </footer>
+                }
+                else
+                {
+                    <section class="limit-reached" aria-labelledby="limit-reached-title">
+                        <span class="limit-reached__icon" aria-hidden="true">!</span>
+                        <h3 id="limit-reached-title">Límite alcanzado</h3>
+                        <p>Tu plan familiar permite hasta 5 tokens. Elimina uno existente o actualiza tu plan.</p>
+                        <button type="button" @onclick="CloseTokenModal">Entendido</button>
+                    </section>
+                }
+            </section>
+        </div>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "new")]
+    public bool NewTokenRequested { get; set; }
+
+    private bool showTokenModal = false;
+    private bool isTokenGenerated = false;
+    private bool isLimitReached = true;
+    private string generatedToken = "AW-109R-NBOS-474D";
+    private string selectedTokenType = "App Móvil (yo)";
+
+    private const string MobileTokenType = "App Móvil (yo)";
+    private const string PatientTokenType = "Paciente";
+    private const string CollaboratorTokenType = "Colaborador";
+
+    protected override void OnParametersSet()
+    {
+        if (NewTokenRequested)
+        {
+            OpenTokenModal();
+        }
+    }
+
+    private void OpenTokenModal()
+    {
+        showTokenModal = true;
+        isTokenGenerated = false;
+    }
+
+    private void CloseTokenModal()
+    {
+        showTokenModal = false;
+        isTokenGenerated = false;
+
+        if (NewTokenRequested)
+        {
+            Navigation.NavigateTo("/dashboard/tokens", replace: true);
+        }
+    }
+
+    private void GenerateToken()
+    {
+        isTokenGenerated = true;
+    }
+
+    private void SelectTokenType(string tokenType)
+    {
+        selectedTokenType = tokenType;
+        isTokenGenerated = false;
+    }
+
+    private string GetTokenTypeClass(string tokenType) =>
+        selectedTokenType == tokenType ? "token-type-option is-selected" : "token-type-option";
+
+}

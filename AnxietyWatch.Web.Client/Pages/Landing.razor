@@ -1,0 +1,530 @@
+@page "/"
+@rendermode InteractiveWebAssembly
+@using System.Globalization
+
+<PageTitle>AnxietyWatch | Monitorea, comprende y actúa</PageTitle>
+
+<div class="landing-page">
+    <section id="inicio" class="hero-section" aria-labelledby="hero-title">
+        <div class="landing-container hero-grid">
+            <div class="hero-copy">
+                <p class="hero-badge">
+                    <span class="badge-spark" aria-hidden="true">✦</span>
+                    IA avanzada, para tu bienestar
+                </p>
+
+                <h1 id="hero-title">Monitorea.<br />Comprende.<br /><span class="text-green">Actúa.</span></h1>
+
+                <p class="hero-description">
+                    Comprende tus patrones de ansiedad con información clara, seguimiento diario y recomendaciones personalizadas para cuidar de ti y de quienes más quieres.
+                </p>
+
+                <div class="hero-actions" aria-label="Acciones principales">
+                    <a class="button button--primary" href="/register">Comenzar gratis</a>
+                    <a class="button button--outline" href="#pricing">Ver planes</a>
+                </div>
+
+                <p class="hero-note">
+                    <span aria-hidden="true">✓</span>
+                    Sin tarjeta de crédito. Cancela cuando quieras.
+                </p>
+            </div>
+
+            <div class="widget-stage">
+                <span class="widget-orbit widget-orbit--one" aria-hidden="true"></span>
+                <span class="widget-orbit widget-orbit--two" aria-hidden="true"></span>
+
+                <article id="caracteristicas" class="status-widget" aria-labelledby="widget-title">
+                    <header class="widget-header">
+                        <div>
+                            <p>Resumen personal</p>
+                            <h2 id="widget-title">Estado actual</h2>
+                        </div>
+                        <span class="live-status"><i aria-hidden="true"></i> Actualizado</span>
+                    </header>
+
+                    <div class="anxiety-summary">
+                        <div class="anxiety-score">
+                            <strong>79</strong>
+                            <span>de 100</span>
+                        </div>
+                        <div class="anxiety-copy">
+                            <span>Nivel de ansiedad</span>
+                            <strong>Moderado</strong>
+                            <p>Tu nivel se mantiene estable esta semana.</p>
+                        </div>
+                    </div>
+
+                    <figure class="widget-chart" aria-label="Tendencia simulada del nivel de ansiedad durante siete días">
+                        <div class="chart-bars" aria-hidden="true">
+                            <span class="chart-bar chart-bar--1"></span>
+                            <span class="chart-bar chart-bar--2"></span>
+                            <span class="chart-bar chart-bar--3"></span>
+                            <span class="chart-bar chart-bar--4"></span>
+                            <span class="chart-bar chart-bar--5"></span>
+                            <span class="chart-bar chart-bar--6"></span>
+                            <span class="chart-bar chart-bar--7"></span>
+                        </div>
+                        <figcaption class="chart-days" aria-hidden="true">
+                            <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                        </figcaption>
+                    </figure>
+
+                    <div class="widget-insights">
+                        <section class="insight-card insight-card--sleep" aria-label="Sueño: 7 horas y 30 minutos">
+                            <span class="insight-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M19 15.5A8 8 0 0 1 8.5 5 7.5 7.5 0 1 0 19 15.5Z" />
+                                </svg>
+                            </span>
+                            <span><small>Sueño</small><strong>7h 30m</strong></span>
+                        </section>
+
+                        <section class="insight-card insight-card--state" aria-label="Estado: 42 puntos">
+                            <span class="insight-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 15h3l2-5 3 8 3-7 2 4h3" />
+                                </svg>
+                            </span>
+                            <span><small>Estado</small><strong>42 pts</strong></span>
+                        </section>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="como-funciona" class="marketing-section how-section" aria-labelledby="how-title">
+        <div class="landing-container">
+            <header class="section-heading">
+                <p class="section-eyebrow">Un proceso sencillo</p>
+                <h2 id="how-title">Cómo funciona</h2>
+                <p>Empieza a comprender tu bienestar en cuatro pasos claros y seguros.</p>
+            </header>
+
+            <ol class="steps-grid">
+                <li class="step-card">
+                    <span class="step-number" aria-hidden="true">1</span>
+                    <h3>Regístrate</h3>
+                    <p>Crea tu cuenta y elige el plan que mejor se adapte a ti.</p>
+                </li>
+                <li class="step-card">
+                    <span class="step-number" aria-hidden="true">2</span>
+                    <h3>Registra cómo te sientes</h3>
+                    <p>Anota tus emociones y nivel de ansiedad cuando lo necesites.</p>
+                </li>
+                <li class="step-card">
+                    <span class="step-number" aria-hidden="true">3</span>
+                    <h3>Consulta tu progreso</h3>
+                    <p>Observa tendencias y descubre patrones de manera sencilla.</p>
+                </li>
+                <li class="step-card">
+                    <span class="step-number" aria-hidden="true">4</span>
+                    <h3>Comparte con quien tú quieras</h3>
+                    <p>Tú decides si deseas compartir información con alguien de confianza.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <section id="recursos" class="marketing-section resources-section" aria-labelledby="resources-title">
+        <div class="landing-container">
+            <header class="section-heading">
+                <p class="section-eyebrow">Contenido para acompañarte</p>
+                <h2 id="resources-title">Recursos</h2>
+                <p>Herramientas prácticas para aprender, conectar y cuidar tu bienestar emocional.</p>
+            </header>
+
+            <div class="resources-grid">
+                <article class="resource-card">
+                    <span class="resource-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 12h4m8 0h4M7 7l2.5 2.5M17 7l-2.5 2.5M7 17l2.5-2.5M17 17l-2.5-2.5" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                    </span>
+                    <h3>Guías de respiración</h3>
+                    <p>Ejercicios breves para recuperar la calma y centrarte en el presente.</p>
+                </article>
+                <article class="resource-card">
+                    <span class="resource-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5 4h10a4 4 0 0 1 4 4v12H8a3 3 0 0 1-3-3V4Zm3 12h11M9 8h6m-6 4h7" />
+                        </svg>
+                    </span>
+                    <h3>Artículos</h3>
+                    <p>Información clara y cercana para entender mejor la ansiedad cotidiana.</p>
+                </article>
+                <article class="resource-card">
+                    <span class="resource-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="9" cy="9" r="3" />
+                            <circle cx="17" cy="10" r="2" />
+                            <path d="M3.5 20c.4-4 2.2-6 5.5-6s5.1 2 5.5 6m.5-5c2.9 0 4.6 1.7 5 5" />
+                        </svg>
+                    </span>
+                    <h3>Comunidad</h3>
+                    <p>Un espacio respetuoso para compartir experiencias y sentirte acompañado.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="marketing-section faq-section" aria-labelledby="faq-title">
+        <div class="landing-container faq-container">
+            <header class="section-heading">
+                <p class="section-eyebrow">Resolvemos tus dudas</p>
+                <h2 id="faq-title">Preguntas frecuentes</h2>
+            </header>
+
+            <div class="faq-list">
+                <details>
+                    <summary>¿Qué es AnxietyWatch?</summary>
+                    <p>Es una aplicación de seguimiento personal que te ayuda a registrar cómo te sientes, observar patrones y acceder a recursos de bienestar emocional.</p>
+                </details>
+                <details>
+                    <summary>¿Puedo usar AnxietyWatch gratis?</summary>
+                    <p>Sí. El plan Gratuito incluye registros básicos, un resumen semanal y ejercicios de respiración para que puedas comenzar sin costo.</p>
+                </details>
+                <details>
+                    <summary>¿Cómo cancelo mi suscripción?</summary>
+                    <p>Puedes cancelar desde la configuración de tu plan. El acceso de pago continuará hasta el final del periodo ya contratado.</p>
+                </details>
+                <details>
+                    <summary>¿Mis datos están seguros?</summary>
+                    <p>La privacidad forma parte del diseño del producto. Tú controlas tu información y decides cuándo y con quién compartirla.</p>
+                </details>
+                <details>
+                    <summary>¿Puedo vincular a mi familia?</summary>
+                    <p>Sí. El plan Familiar permite crear hasta cinco perfiles y usar tokens de vinculación para conectar a cada miembro de forma privada.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing-section" aria-labelledby="pricing-title">
+        <div class="landing-container">
+            <header class="pricing-header">
+                <p class="section-eyebrow">Planes simples y transparentes</p>
+                <h2 id="pricing-title">Elige el plan que mejor te acompaña</h2>
+                <p>Empieza gratis y cambia de plan cuando tus necesidades evolucionen.</p>
+
+                <div class="billing-toggle" role="group" aria-label="Ciclo de facturación">
+                    <button type="button" class="@(isAnnual ? "" : "is-active")" aria-pressed="@(!isAnnual)" @onclick="() => isAnnual = false">
+                        Mensual
+                    </button>
+                    <button type="button" class="@(isAnnual ? "is-active" : "")" aria-pressed="@isAnnual" @onclick="() => isAnnual = true">
+                        Anual
+                        <span>2 meses gratis</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="pricing-grid">
+                <article class="plan-card">
+                    <header>
+                        <h3>Gratuito</h3>
+                        <p>Para comenzar a conocerte.</p>
+                    </header>
+                    <div class="plan-price"><strong>$0</strong><span>/@BillingPeriod</span></div>
+                    <ul>
+                        <li>5 registros al mes</li>
+                        <li>Resumen semanal básico</li>
+                        <li>Ejercicios de respiración</li>
+                    </ul>
+                    <div class="plan-card-actions">
+                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(FreePlan)">Ver detalles</button>
+                        <a class="plan-button plan-button--outline" href="/register?plan=free">Comenzar gratis</a>
+                    </div>
+                </article>
+
+                <article class="plan-card">
+                    <header>
+                        <h3>Individual</h3>
+                        <p>Seguimiento completo para ti.</p>
+                    </header>
+                    <div class="plan-price"><strong>@GetPrice(4.99m)</strong><span>/@BillingPeriod</span></div>
+                    <ul>
+                        <li>Registros ilimitados</li>
+                        <li>Análisis con IA</li>
+                        <li>Recomendaciones personales</li>
+                    </ul>
+                    <div class="plan-card-actions">
+                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(IndividualPlan)">Ver detalles</button>
+                        <a class="plan-button plan-button--outline" href="/register?plan=individual">Elegir Individual</a>
+                    </div>
+                </article>
+
+                <article class="plan-card plan-card--featured">
+                    <span class="popular-badge">Más popular</span>
+                    <header>
+                        <h3>Familiar</h3>
+                        <p>Bienestar compartido en familia.</p>
+                    </header>
+                    <div class="plan-price"><strong>@GetPrice(8.99m)</strong><span>/@BillingPeriod</span></div>
+                    <ul>
+                        <li>Hasta 5 miembros</li>
+                        <li>Panel familiar privado</li>
+                        <li>Alertas y tendencias</li>
+                    </ul>
+                    <div class="plan-card-actions">
+                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(FamilyPlan)">Ver detalles</button>
+                        <a class="plan-button plan-button--primary" href="/register?plan=family">Elegir Familiar</a>
+                    </div>
+                </article>
+
+                <article class="plan-card">
+                    <header>
+                        <h3>Profesional</h3>
+                        <p>Herramientas avanzadas y reportes.</p>
+                    </header>
+                    <div class="plan-price"><strong>@GetPrice(19.99m)</strong><span>/@BillingPeriod</span></div>
+                    <ul>
+                        <li>Panel profesional</li>
+                        <li>Reportes detallados</li>
+                        <li>Soporte prioritario</li>
+                    </ul>
+                    <div class="plan-card-actions">
+                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(ProfessionalPlan)">Ver detalles</button>
+                        <a class="plan-button plan-button--outline" href="/register?plan=professional">Elegir Profesional</a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="sobre-nosotros" class="marketing-section about-section" aria-labelledby="about-title">
+        <div class="landing-container about-panel">
+            <p class="section-eyebrow">Nuestra misión</p>
+            <h2 id="about-title">Sobre nosotros</h2>
+            <p>En AnxietyWatch trabajamos para que el bienestar emocional sea más accesible, comprensible y cercano. Creamos herramientas que ayudan a cada persona a conocer sus patrones y tomar decisiones informadas respetando siempre su privacidad.</p>
+        </div>
+    </section>
+
+    <section class="marketing-section testimonials-section" aria-labelledby="testimonials-title">
+        <div class="landing-container">
+            <header class="section-heading">
+                <p class="section-eyebrow">Experiencias reales</p>
+                <h2 id="testimonials-title">Personas que avanzan a su ritmo</h2>
+                <p>Historias ficticias que muestran cómo AnxietyWatch puede acompañar diferentes contextos.</p>
+            </header>
+
+            <div class="testimonials-grid">
+                <article class="testimonial-card">
+                    <p class="testimonial-quote">“Registrar mis días me ayudó a reconocer qué situaciones elevaban mi ansiedad sin sentirme juzgada.”</p>
+                    <footer class="testimonial-author">
+                        <span class="testimonial-avatar" aria-hidden="true">AR</span>
+                        <span><strong>Ana Ruiz</strong><small>Usuaria del plan Individual</small></span>
+                    </footer>
+                </article>
+                <article class="testimonial-card">
+                    <p class="testimonial-quote">“El panel familiar nos dio una forma respetuosa de acompañarnos sin invadir la privacidad de nadie.”</p>
+                    <footer class="testimonial-author">
+                        <span class="testimonial-avatar" aria-hidden="true">CM</span>
+                        <span><strong>Carlos Méndez</strong><small>Padre y usuario del plan Familiar</small></span>
+                    </footer>
+                </article>
+                <article class="testimonial-card">
+                    <p class="testimonial-quote">“Ver mi progreso de forma visual convirtió pequeños cambios diarios en una motivación constante.”</p>
+                    <footer class="testimonial-author">
+                        <span class="testimonial-avatar" aria-hidden="true">LG</span>
+                        <span><strong>Laura Gómez</strong><small>Estudiante universitaria</small></span>
+                    </footer>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    @if (selectedPlan is not null)
+    {
+        <div class="plan-modal-backdrop" role="presentation" @onclick="ClosePlanDetails">
+            <section class="plan-modal"
+                     role="dialog"
+                     aria-modal="true"
+                     aria-labelledby="plan-modal-title"
+                     @onclick:stopPropagation="true">
+                <button class="modal-close" type="button" aria-label="Cerrar detalles del plan" @onclick="ClosePlanDetails">×</button>
+
+                <header class="modal-header">
+                    <span class="modal-plan-badge">Plan @selectedPlan.Name</span>
+                    <h2 id="plan-modal-title">@selectedPlan.Title</h2>
+                    <p>@selectedPlan.Description</p>
+
+                    <div class="modal-price">
+                        <strong>@GetPrice(selectedPlan.MonthlyPrice)</strong>
+                        <span>/@BillingPeriod</span>
+                    </div>
+
+                    <p class="ideal-for"><strong>Ideal para:</strong> @selectedPlan.IdealFor</p>
+                </header>
+
+                <div class="modal-highlights" aria-label="Características principales">
+                    @foreach (var feature in selectedPlan.Highlights)
+                    {
+                        <article class="modal-highlight">
+                            <span class="modal-highlight__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="m7 12 3 3 7-7" />
+                                    <circle cx="12" cy="12" r="9" />
+                                </svg>
+                            </span>
+                            <div>
+                                <h3>@feature.Title</h3>
+                                <p>@feature.Description</p>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <section class="modal-includes" aria-labelledby="modal-includes-title">
+                    <h3 id="modal-includes-title">Todo lo que incluye</h3>
+                    <ul>
+                        @foreach (var item in selectedPlan.Includes)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </section>
+
+                <footer class="modal-actions">
+                    <a class="modal-primary-button" href="@($"/register?plan={selectedPlan.Id}")">Elegir @selectedPlan.Name</a>
+                    <button class="modal-secondary-button" type="button" @onclick="ClosePlanDetails">Volver</button>
+                </footer>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isAnnual;
+    private PlanDetails? selectedPlan;
+
+    private static readonly PlanDetails FreePlan = new(
+        "free",
+        "Gratuito",
+        0m,
+        "Da el primer paso hacia un mayor bienestar",
+        "Conoce las funciones esenciales de AnxietyWatch y empieza a registrar cómo te sientes.",
+        "personas que desean comenzar con un seguimiento sencillo y sin compromiso.",
+        [
+            new("Registro esencial", "Captura tus niveles de ansiedad de forma rápida."),
+            new("Resumen semanal", "Observa una vista básica de tu evolución."),
+            new("Respiración guiada", "Accede a ejercicios breves para momentos difíciles."),
+            new("Privacidad", "Tus datos permanecen protegidos y bajo tu control.")
+        ],
+        [
+            "Hasta 5 registros cada mes",
+            "Resumen semanal básico",
+            "Ejercicios de respiración",
+            "Acceso desde cualquier dispositivo",
+            "Historial de los últimos 7 días",
+            "Soporte de la comunidad"
+        ]);
+
+    private static readonly PlanDetails IndividualPlan = new(
+        "individual",
+        "Individual",
+        4.99m,
+        "Comprende tus patrones y avanza a tu ritmo",
+        "Obtén seguimiento ilimitado, análisis inteligente y recomendaciones adaptadas a tu bienestar.",
+        "personas que quieren profundizar en sus hábitos y recibir orientación personalizada.",
+        [
+            new("Registros ilimitados", "Documenta cada momento sin límites mensuales."),
+            new("Análisis con IA", "Detecta patrones y posibles factores desencadenantes."),
+            new("Recomendaciones", "Recibe sugerencias ajustadas a tu progreso."),
+            new("Informes claros", "Consulta tendencias fáciles de comprender.")
+        ],
+        [
+            "Registros diarios ilimitados",
+            "Análisis de patrones con IA",
+            "Recomendaciones personalizadas",
+            "Historial completo",
+            "Biblioteca de ejercicios",
+            "Informes mensuales descargables",
+            "Recordatorios configurables",
+            "Soporte por correo electrónico"
+        ]);
+
+    private static readonly PlanDetails FamilyPlan = new(
+        "family",
+        "Familiar",
+        8.99m,
+        "Cuida el bienestar de quienes más quieres",
+        "Crea un espacio privado para acompañar a tu familia y comprender juntos sus tendencias de bienestar.",
+        "familias que buscan prevención, acompañamiento y una visión compartida con privacidad individual.",
+        [
+            new("Hasta 5 miembros", "Cada persona conserva su perfil y privacidad."),
+            new("Panel familiar", "Consulta tendencias generales desde un solo lugar."),
+            new("Alertas inteligentes", "Identifica cambios importantes de forma temprana."),
+            new("Perfiles privados", "Cada miembro controla qué información comparte.")
+        ],
+        [
+            "Todo lo incluido en Individual",
+            "Hasta 5 perfiles familiares",
+            "Panel de bienestar familiar",
+            "Alertas y tendencias compartidas",
+            "Privacidad configurable por miembro",
+            "Retos y ejercicios familiares",
+            "Informes familiares mensuales",
+            "Soporte prioritario"
+        ]);
+
+    private static readonly PlanDetails ProfessionalPlan = new(
+        "professional",
+        "Profesional",
+        19.99m,
+        "Convierte la información en mejores decisiones",
+        "Accede a herramientas avanzadas, reportes detallados y una visión profesional del progreso.",
+        "profesionales y equipos que necesitan análisis profundos, seguimiento y reportes estructurados.",
+        [
+            new("Panel avanzado", "Organiza indicadores clave en una vista profesional."),
+            new("Reportes detallados", "Exporta información clara para el seguimiento."),
+            new("Análisis ampliado", "Explora tendencias y periodos personalizados."),
+            new("Soporte prioritario", "Obtén atención preferente cuando la necesites.")
+        ],
+        [
+            "Todo lo incluido en Familiar",
+            "Panel profesional avanzado",
+            "Periodos de análisis personalizados",
+            "Reportes detallados exportables",
+            "Gestión avanzada de información",
+            "Métricas y tendencias ampliadas",
+            "Acceso anticipado a funciones",
+            "Soporte prioritario especializado"
+        ]);
+
+    private string BillingPeriod => isAnnual ? "año" : "mes";
+
+    private string GetPrice(decimal monthlyPrice)
+    {
+        if (monthlyPrice == 0)
+        {
+            return "$0";
+        }
+
+        var price = isAnnual ? monthlyPrice * 10 : monthlyPrice;
+        return $"${price.ToString("0.00", CultureInfo.InvariantCulture)}";
+    }
+
+    private void OpenPlanDetails(PlanDetails plan)
+    {
+        selectedPlan = plan;
+    }
+
+    private void ClosePlanDetails()
+    {
+        selectedPlan = null;
+    }
+
+    private sealed record PlanFeature(string Title, string Description);
+
+    private sealed record PlanDetails(
+        string Id,
+        string Name,
+        decimal MonthlyPrice,
+        string Title,
+        string Description,
+        string IdealFor,
+        IReadOnlyList<PlanFeature> Highlights,
+        IReadOnlyList<string> Includes);
+}
