@@ -22,10 +22,12 @@ public static class HttpApiExtensions
         }
 
         var problem = await ReadProblemAsync(response, options, cancellationToken);
-        var retryAfter = response.Headers.RetryAfter?.Delta is { } retry
-            ? (int)retry.TotalSeconds
-            : (int?)null;
-        return ApiResult<T>.Failure(problem, retryAfter);
+        int? retryAfter = null;
+        if (response.Headers.RetryAfter?.Delta.HasValue == true)
+        {
+            retryAfter = (int)response.Headers.RetryAfter.Delta.Value.TotalSeconds;
+        }
+        return new ApiResult<T> { IsSuccess = false, Problem = problem, RetryAfterSeconds = retryAfter };
     }
 
     /// <summary>Lee un tipo deserializado o lanza <see cref="ApiException"/> ante un estado no exitoso.</summary>
@@ -46,9 +48,11 @@ public static class HttpApiExtensions
         }
 
         var problem = await ReadProblemAsync(response, options, cancellationToken);
-        var retryAfter = response.Headers.RetryAfter?.Delta is { } retry
-            ? (int)retry.TotalSeconds
-            : null;
+        int? retryAfter = null;
+        if (response.Headers.RetryAfter?.Delta.HasValue == true)
+        {
+            retryAfter = (int)response.Headers.RetryAfter.Delta.Value.TotalSeconds;
+        }
         throw new ApiException(problem, problem.StatusCode, retryAfter);
     }
 

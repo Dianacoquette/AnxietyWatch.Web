@@ -15,7 +15,7 @@ JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web);
 builder.Services.AddSingleton(jsonOptions);
 
 // Almacén de sesión (token + usuario) y handler que inyecta Authorization: Bearer.
-builder.Services.AddSingleton<ITokenStore, TokenStore>();
+builder.Services.AddScoped<ITokenStore, TokenStore>();
 
 builder.Services.AddScoped(sp => new HttpClient(
         new AuthHandler(sp.GetRequiredService<ITokenStore>())
