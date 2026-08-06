@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace AnxietyWatch.Web.Client.Models.Auth;
 
-public class UserInfo
+/// <summary>Representa un usuario según el contrato <c>/api/auth</c> (camelCase).</summary>
+public class UserDto
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
@@ -15,4 +16,10 @@ public class UserInfo
 
     [JsonPropertyName("planId")]
     public string PlanId { get; set; } = string.Empty;
+
+    [JsonPropertyName("emailVerified")]
+    public bool EmailVerified { get; set; }
+
+    [JsonPropertyName("avatarUrl")]
+    public string? AvatarUrl { get; set; }
 }

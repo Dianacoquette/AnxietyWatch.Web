@@ -13,7 +13,8 @@ public class MockAuthService : IAuthService
             return new AuthResponse
             {
                 Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock-token",
-                User = new UserInfo
+                ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+                User = new UserDto
                 {
                     Id = "mock-user-001",
                     FullName = "Usuario de Prueba",
@@ -33,7 +34,8 @@ public class MockAuthService : IAuthService
         return new AuthResponse
         {
             Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock-token-register",
-            User = new UserInfo
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+            User = new UserDto
             {
                 Id = "mock-user-002",
                 FullName = request.FullName,
@@ -43,8 +45,7 @@ public class MockAuthService : IAuthService
         };
     }
 
-    public Task LogoutAsync()
-    {
-        return Task.CompletedTask;
-    }
+    public Task LogoutAsync() => Task.CompletedTask;
+
+    public Task<AuthResponse?> GetSessionAsync() => Task.FromResult<AuthResponse?>(null);
 }

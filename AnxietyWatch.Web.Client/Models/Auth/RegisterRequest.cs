@@ -24,4 +24,7 @@ public class RegisterRequest
 
     [JsonPropertyName("billingCycle")]
     public string BillingCycle { get; set; } = "monthly";
+
+    [JsonPropertyName("paymentMethodToken")]
+    public string? PaymentMethodToken { get; set; }
 }
