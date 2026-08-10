@@ -26,6 +26,19 @@ else
             </div>
         </header>
 
+        @if (isLoadingProfileSettings)
+        {
+            <div class="profile-load-state" role="status">Cargando perfil y preferencias...</div>
+        }
+        else if (!string.IsNullOrWhiteSpace(loadProfileSettingsError))
+        {
+            <div class="profile-load-state profile-load-state--error" role="alert">
+                <p>@loadProfileSettingsError</p>
+                <button type="button" disabled="@isLoadingProfileSettings" @onclick="LoadProfileSettingsAsync">Reintentar</button>
+            </div>
+        }
+        else
+        {
         <EditForm Model="profileModel" OnValidSubmit="SaveProfileAsync">
             <DataAnnotationsValidator />
 
@@ -53,7 +66,7 @@ else
                         <InputText id="profile-name"
                                    class="form-input"
                                    autocomplete="name"
-                                   disabled="@profilePending"
+                                   disabled="@(isLoadingProfileSettings || profilePending || !profileSettingsLoaded)"
                                    @bind-Value="profileModel.FullName" />
                         <ValidationMessage For="@(() => profileModel.FullName)" />
                     </div>
@@ -99,7 +112,7 @@ else
                                    type="url"
                                    autocomplete="url"
                                    placeholder="https://ejemplo.com/avatar.jpg"
-                                   disabled="@profilePending"
+                                   disabled="@(isLoadingProfileSettings || profilePending || !profileSettingsLoaded)"
                                    @bind-Value="profileModel.AvatarUrl" />
                         <ValidationMessage For="@(() => profileModel.AvatarUrl)" />
                         <small>Introduce una URL pública de imagen. No se cargan archivos desde esta página.</small>
@@ -112,7 +125,7 @@ else
                 }
 
                 <div class="profile-card__actions">
-                    <button class="primary-profile-button" type="submit" disabled="@profilePending">
+                    <button class="primary-profile-button" type="submit" disabled="@(isLoadingProfileSettings || profilePending || !profileSettingsLoaded)">
                         @(profilePending ? "Guardando..." : "Guardar cambios")
                     </button>
                 </div>
@@ -131,7 +144,7 @@ else
                     </span>
                     <div>
                         <h2 id="settings-title">Preferencias de seguimiento</h2>
-                        <p>La API aún no ofrece GET /api/settings. Estos valores son una propuesta local: revísalos y guárdalos solo si quieres aplicarlos.</p>
+                        <p>Estas preferencias se cargaron desde tu configuración guardada.</p>
                     </div>
                 </div>
 
@@ -142,13 +155,13 @@ else
                                      class="form-input"
                                      min="0"
                                      max="100"
-                                     disabled="@settingsPending"
+                                     disabled="@(isLoadingProfileSettings || settingsPending || !profileSettingsLoaded)"
                                      @bind-Value="settingsModel.AnxietyThreshold" />
                         <ValidationMessage For="@(() => settingsModel.AnxietyThreshold)" />
                     </div>
 
                     <label class="setting-toggle" for="push-notifications">
-                        <InputCheckbox id="push-notifications" disabled="@settingsPending" @bind-Value="settingsModel.PushNotifications" />
+                        <InputCheckbox id="push-notifications" disabled="@(isLoadingProfileSettings || settingsPending || !profileSettingsLoaded)" @bind-Value="settingsModel.PushNotifications" />
                         <span>
                             <strong>Notificaciones push</strong>
                             <small>Permite avisos relacionados con tu seguimiento.</small>
@@ -156,7 +169,7 @@ else
                     </label>
 
                     <label class="setting-toggle" for="private-mode">
-                        <InputCheckbox id="private-mode" disabled="@settingsPending" @bind-Value="settingsModel.PrivateMode" />
+                        <InputCheckbox id="private-mode" disabled="@(isLoadingProfileSettings || settingsPending || !profileSettingsLoaded)" @bind-Value="settingsModel.PrivateMode" />
                         <span>
                             <strong>Modo privado</strong>
                             <small>Aplica el modo privado a la información de seguimiento.</small>
@@ -170,7 +183,7 @@ else
                 }
 
                 <div class="profile-card__actions">
-                    <button class="primary-profile-button" type="submit" disabled="@settingsPending">
+                    <button class="primary-profile-button" type="submit" disabled="@(isLoadingProfileSettings || settingsPending || !profileSettingsLoaded)">
                         @(settingsPending ? "Guardando..." : "Guardar preferencias")
                     </button>
                 </div>
@@ -264,6 +277,7 @@ else
             </div>
             <button type="button" disabled aria-disabled="true">Solicitar vía soporte</button>
         </section>
+        }
     </section>
 }
 
@@ -275,6 +289,8 @@ else
     private bool profilePending;
     private bool settingsPending;
     private bool passwordPending;
+    private bool isLoadingProfileSettings = true;
+    private bool profileSettingsLoaded;
     private bool showCurrentPassword;
     private bool showNewPassword;
     private bool showConfirmPassword;
@@ -284,6 +300,7 @@ else
     private string? profileNotice;
     private string? settingsNotice;
     private string? passwordNotice;
+    private string? loadProfileSettingsError;
     private bool profileError;
     private bool settingsError;
     private bool passwordError;
@@ -293,6 +310,7 @@ else
     private int verificationCooldownSeconds;
     private string? verificationNotice;
     private CancellationTokenSource verificationCooldownCancellation = new();
+    private readonly CancellationTokenSource pageCancellation = new();
 
     private string Initials => GetInitials(profileModel.FullName);
     private string PlanName => planId.Trim().ToLowerInvariant() switch
@@ -306,6 +324,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await SessionManager.InitializeAsync();
         var user = SessionManager.CurrentUser;
         if (user is null)
         {
@@ -313,16 +332,69 @@ else
             return;
         }
 
-        profileModel = new ProfileModel { FullName = user.FullName, AvatarUrl = user.AvatarUrl };
         email = user.Email;
         emailVerified = user.EmailVerified;
         planId = user.PlanId;
         sessionReady = true;
-        await LoadVerificationStatusAsync();
+        await Task.WhenAll(LoadProfileSettingsAsync(), LoadVerificationStatusAsync());
+    }
+
+    private async Task LoadProfileSettingsAsync()
+    {
+        isLoadingProfileSettings = true;
+        loadProfileSettingsError = null;
+        profileSettingsLoaded = false;
+        var profileTask = ProfileService.GetProfileAsync(pageCancellation.Token);
+        var settingsTask = ProfileService.GetSettingsAsync(pageCancellation.Token);
+
+        try
+        {
+            await Task.WhenAll(profileTask, settingsTask);
+
+            var profile = await profileTask;
+            var settings = await settingsTask;
+
+            profileModel = new ProfileModel
+            {
+                FullName = profile.FullName,
+                AvatarUrl = profile.AvatarUrl
+            };
+            settingsModel.AnxietyThreshold = settings.AnxietyThreshold;
+            settingsModel.PushNotifications = settings.PushNotifications;
+            settingsModel.PrivateMode = settings.PrivateMode;
+            await UpdateStoredUserAsync(profile.FullName, profile.AvatarUrl);
+            profileSettingsLoaded = true;
+        }
+        catch (OperationCanceledException) when (pageCancellation.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            var exceptions = GetTaskExceptions(profileTask, settingsTask);
+            var unauthorized = exceptions.OfType<ApiException>().FirstOrDefault(exception => exception.StatusCode == 401);
+            if (unauthorized is not null)
+            {
+                await HandleUnauthorizedAsync(unauthorized);
+                return;
+            }
+
+            var apiException = exceptions.OfType<ApiException>().FirstOrDefault();
+            loadProfileSettingsError = apiException is not null
+                ? ApiErrorMessages.For(apiException, "No pudimos cargar tu perfil y preferencias.")
+                : exceptions.Any(exception => exception is HttpRequestException)
+                    ? "No pudimos conectar con el servicio. Revisa tu conexión e inténtalo nuevamente."
+                    : "No pudimos cargar tu perfil y preferencias. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isLoadingProfileSettings = false;
+        }
     }
 
     private async Task SaveProfileAsync()
     {
+        if (!profileSettingsLoaded || isLoadingProfileSettings || profilePending) return;
+
         profilePending = true;
         profileNotice = null;
 
@@ -358,6 +430,8 @@ else
 
     private async Task SaveSettingsAsync()
     {
+        if (!profileSettingsLoaded || isLoadingProfileSettings || settingsPending) return;
+
         settingsPending = true;
         settingsNotice = null;
 
@@ -486,7 +560,7 @@ else
         verificationNotice = null;
         try
         {
-            var response = await AuthService.GetEmailVerificationStatusAsync();
+            var response = await AuthService.GetEmailVerificationStatusAsync(pageCancellation.Token);
             emailVerified = response.EmailVerified;
             await UpdateStoredVerificationAsync(response.EmailVerified);
         }
@@ -495,6 +569,14 @@ else
             if (await HandleUnauthorizedAsync(exception)) return;
             verificationError = true;
             verificationNotice = ApiErrorMessages.For(exception, "No pudimos consultar la verificación del correo.");
+        }
+        catch (OperationCanceledException) when (pageCancellation.IsCancellationRequested)
+        {
+        }
+        catch (HttpRequestException)
+        {
+            verificationError = true;
+            verificationNotice = "No pudimos conectar con el servicio para consultar la verificación.";
         }
         finally
         {
@@ -510,8 +592,9 @@ else
         verificationNotice = null;
         try
         {
-            var response = await AuthService.ResendEmailVerificationAsync();
+            var response = await AuthService.ResendEmailVerificationAsync(pageCancellation.Token);
             await LoadVerificationStatusAsync();
+            pageCancellation.Token.ThrowIfCancellationRequested();
             verificationError = false;
             verificationNotice = string.IsNullOrWhiteSpace(response.Message)
                 ? "Verificación reenviada."
@@ -527,6 +610,14 @@ else
             {
                 StartVerificationCooldown(exception.RetryAfterSeconds ?? 60);
             }
+        }
+        catch (OperationCanceledException) when (pageCancellation.IsCancellationRequested)
+        {
+        }
+        catch (HttpRequestException)
+        {
+            verificationError = true;
+            verificationNotice = "No pudimos conectar con el servicio para reenviar la verificación.";
         }
         finally
         {
@@ -579,6 +670,12 @@ else
         };
     }
 
+    private static IReadOnlyList<Exception> GetTaskExceptions(params Task[] tasks) =>
+        tasks
+            .Where(task => task.IsFaulted && task.Exception is not null)
+            .SelectMany(task => task.Exception!.Flatten().InnerExceptions)
+            .ToArray();
+
     private static string NoticeClass(bool isError) => isError ? "inline-notice inline-notice--error" : "inline-notice";
 
     private static RenderFragment PasswordVisibilityIcon(bool visible) => builder =>
@@ -605,8 +702,8 @@ else
     public sealed class SettingsModel
     {
         [Range(0, 100, ErrorMessage = "El umbral debe estar entre 0 y 100.")]
-        public int AnxietyThreshold { get; set; } = 70;
-        public bool PushNotifications { get; set; } = true;
+        public int AnxietyThreshold { get; set; }
+        public bool PushNotifications { get; set; }
         public bool PrivateMode { get; set; }
     }
 
@@ -626,6 +723,8 @@ else
 
     public void Dispose()
     {
+        pageCancellation.Cancel();
+        pageCancellation.Dispose();
         verificationCooldownCancellation.Cancel();
         verificationCooldownCancellation.Dispose();
     }

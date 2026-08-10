@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject IServiceProvider Services
 @inject NavigationManager Navigation
+@implements IDisposable
 
 @if (!string.IsNullOrWhiteSpace(sessionError))
 {
@@ -171,9 +172,11 @@ else
     private bool logoutPending;
     private bool sessionRetryPending;
     private string? sessionError;
+    private IAuthSessionManager? sessionManager;
 
-    private IAuthSessionManager SessionManager => (IAuthSessionManager)(Services.GetService(typeof(IAuthSessionManager))
-        ?? throw new InvalidOperationException("IAuthSessionManager no está disponible en el cliente."));
+    private IAuthSessionManager SessionManager => sessionManager ??=
+        (IAuthSessionManager)(Services.GetService(typeof(IAuthSessionManager))
+            ?? throw new InvalidOperationException("IAuthSessionManager no está disponible en el cliente."));
     private IAuthService AuthService => (IAuthService)(Services.GetService(typeof(IAuthService))
         ?? throw new InvalidOperationException("IAuthService no está disponible en el cliente."));
 
@@ -194,6 +197,7 @@ else
             return;
         }
 
+        SessionManager.SessionChanged += HandleSessionChanged;
         await ApplySessionStateAsync(await SessionManager.InitializeAsync());
     }
 
@@ -251,6 +255,16 @@ else
         }
     }
 
+    private void HandleSessionChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            CurrentUser = SessionManager.CurrentUser;
+            sessionReady = CurrentUser is not null;
+            StateHasChanged();
+        });
+    }
+
     private static string GetInitials(string name)
     {
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -260,5 +274,13 @@ else
             1 => parts[0][..1].ToUpperInvariant(),
             _ => string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant()
         };
+    }
+
+    public void Dispose()
+    {
+        if (sessionManager is not null)
+        {
+            sessionManager.SessionChanged -= HandleSessionChanged;
+        }
     }
 }
