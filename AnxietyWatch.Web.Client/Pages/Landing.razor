@@ -262,7 +262,14 @@
                             </ul>
                             <div class="plan-card-actions">
                                 <button class="plan-details-button" type="button" disabled="@isPlansLoading" @onclick="() => OpenPlanDetails(plan)">Ver detalles</button>
-                                <a class="plan-button plan-button--outline" href="@GetRegistrationUrl(plan.Id)">Elegir @plan.Name</a>
+                                @if (IsFreePlan(plan))
+                                {
+                                    <a class="plan-button plan-button--outline" href="@GetRegistrationUrl(plan.Id)">Comenzar gratis</a>
+                                }
+                                else
+                                {
+                                    <button class="plan-button plan-button--outline" type="button" disabled>Próximamente</button>
+                                }
                             </div>
                         </article>
                     }
@@ -372,7 +379,14 @@
                 }
 
                 <footer class="modal-actions">
-                    <a class="modal-primary-button" href="@GetRegistrationUrl(selectedPlan.Id)">Elegir @selectedPlan.Name</a>
+                    @if (IsFreePlan(selectedPlan))
+                    {
+                        <a class="modal-primary-button" href="@GetRegistrationUrl(selectedPlan.Id)">Comenzar gratis</a>
+                    }
+                    else
+                    {
+                        <button class="modal-primary-button" type="button" disabled>Pago no disponible · Próximamente</button>
+                    }
                     <button class="modal-secondary-button" type="button" @onclick="ClosePlanDetails">Volver</button>
                 </footer>
             </section>
@@ -402,6 +416,9 @@
 
     private string GetRegistrationUrl(string planId) =>
         $"/register?plan={Uri.EscapeDataString(planId)}&cycle={(isAnnual ? "yearly" : "monthly")}";
+
+    private static bool IsFreePlan(PlanDto plan) =>
+        plan.Id.Equals("free", StringComparison.OrdinalIgnoreCase) && plan.PriceMonthly == 0 && plan.PriceYearly == 0;
 
     protected override async Task OnInitializedAsync() =>
         await Task.WhenAll(LoadPlansAsync(), LoadFaqAsync(), LoadTestimonialsAsync());

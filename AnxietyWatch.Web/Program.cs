@@ -1,4 +1,3 @@
-using AnxietyWatch.Web.Client.Services;
 using AnxietyWatch.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,8 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
-
-builder.Services.AddSingleton<IAuthService, MockAuthService>();
 
 var app = builder.Build();
 

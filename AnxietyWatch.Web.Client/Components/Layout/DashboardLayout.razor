@@ -2,7 +2,16 @@
 @inject IServiceProvider Services
 @inject NavigationManager Navigation
 
-@if (!sessionReady)
+@if (!string.IsNullOrWhiteSpace(sessionError))
+{
+    <div class="dashboard-session-loading dashboard-session-error" role="alert">
+        <span>@sessionError</span>
+        <button type="button" disabled="@sessionRetryPending" @onclick="RetrySessionAsync">
+            @(sessionRetryPending ? "Validando..." : "Reintentar")
+        </button>
+    </div>
+}
+else if (!sessionReady)
 {
     <div class="dashboard-session-loading" role="status">Restaurando tu sesión...</div>
 }
@@ -160,9 +169,11 @@ else
     private UserDto? CurrentUser;
     private bool sessionReady;
     private bool logoutPending;
+    private bool sessionRetryPending;
+    private string? sessionError;
 
-    private ITokenStore TokenStore => (ITokenStore)(Services.GetService(typeof(ITokenStore))
-        ?? throw new InvalidOperationException("ITokenStore no está disponible en el cliente."));
+    private IAuthSessionManager SessionManager => (IAuthSessionManager)(Services.GetService(typeof(IAuthSessionManager))
+        ?? throw new InvalidOperationException("IAuthSessionManager no está disponible en el cliente."));
     private IAuthService AuthService => (IAuthService)(Services.GetService(typeof(IAuthService))
         ?? throw new InvalidOperationException("IAuthService no está disponible en el cliente."));
 
@@ -183,17 +194,43 @@ else
             return;
         }
 
-        await TokenStore.RestoreFromStorageAsync();
-        CurrentUser = TokenStore.GetUser();
-        if (CurrentUser is null || string.IsNullOrWhiteSpace(TokenStore.GetAccessToken()) || TokenStore.GetExpiresAt() <= DateTimeOffset.UtcNow)
+        await ApplySessionStateAsync(await SessionManager.InitializeAsync());
+    }
+
+    private async Task RetrySessionAsync()
+    {
+        if (sessionRetryPending) return;
+        sessionRetryPending = true;
+        sessionError = null;
+        try
         {
-            await AuthService.LogoutAsync();
+            await ApplySessionStateAsync(await SessionManager.RetryInitializationAsync());
+        }
+        finally
+        {
+            sessionRetryPending = false;
+        }
+    }
+
+    private Task ApplySessionStateAsync(bool isAuthenticated)
+    {
+        if (!string.IsNullOrWhiteSpace(SessionManager.InitializationError))
+        {
+            sessionError = SessionManager.InitializationError;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+
+        CurrentUser = SessionManager.CurrentUser;
+        if (!isAuthenticated || CurrentUser is null)
+        {
             Navigation.NavigateTo("/login", replace: true);
-            return;
+            return Task.CompletedTask;
         }
 
         sessionReady = true;
         StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private async Task LogoutAsync()

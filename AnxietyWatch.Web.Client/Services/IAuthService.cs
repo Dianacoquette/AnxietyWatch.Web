@@ -8,4 +8,8 @@ public interface IAuthService
     Task<AuthResponse> RegisterAsync(RegisterRequest request);
     Task LogoutAsync();
     Task<AuthResponse?> GetSessionAsync();
+    Task<AuthMessageResponse> ForgotPasswordAsync(ForgotPasswordRequest request);
+    Task<AuthMessageResponse> ResetPasswordAsync(ResetPasswordRequest request);
+    Task<EmailVerificationStatusResponse> GetEmailVerificationStatusAsync();
+    Task<AuthMessageResponse> ResendEmailVerificationAsync();
 }

@@ -5,8 +5,7 @@
 @using System.Globalization
 @using AnxietyWatch.Web.Client.Models.Api
 @inject IEpisodeService EpisodeService
-@inject ITokenStore TokenStore
-@inject IAuthService AuthService
+@inject IAuthSessionManager SessionManager
 @inject NavigationManager Navigation
 
 <PageTitle>Episodios | AnxietyWatch</PageTitle>
@@ -149,28 +148,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await TokenStore.RestoreFromStorageAsync();
-        if (TokenStore.GetUser() is null)
+        if (!SessionManager.IsAuthenticated)
         {
-            try
-            {
-                if (await AuthService.GetSessionAsync() is null)
-                {
-                    await RedirectToLoginAsync();
-                    return;
-                }
-            }
-            catch (ApiException exception) when (exception.StatusCode == 401)
-            {
-                await RedirectToLoginAsync();
-                return;
-            }
-            catch (ApiException exception)
-            {
-                loadError = ApiErrorMessages.For(exception, "No pudimos validar tu sesión.");
-                isLoading = false;
-                return;
-            }
+            await RedirectToLoginAsync();
+            return;
         }
 
         await LoadEpisodesAsync();
@@ -250,7 +231,7 @@
     {
         if (isRedirecting) return;
         isRedirecting = true;
-        await AuthService.LogoutAsync();
+        await SessionManager.ClearAsync();
         Navigation.NavigateTo("/login", replace: true);
     }
 

@@ -10,14 +10,18 @@ namespace AnxietyWatch.Web.Client.Services;
 /// </summary>
 public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private readonly ITokenStore _tokenStore;
+    private readonly IAuthSessionManager _sessionManager;
 
-    public ApiAuthenticationStateProvider(ITokenStore tokenStore) => _tokenStore = tokenStore;
+    public ApiAuthenticationStateProvider(IAuthSessionManager sessionManager)
+    {
+        _sessionManager = sessionManager;
+        _sessionManager.SessionChanged += NotifyAuthenticationStateChanged;
+    }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        await _tokenStore.RestoreFromStorageAsync();
-        var user = _tokenStore.GetUser();
+        await _sessionManager.InitializeAsync();
+        var user = _sessionManager.CurrentUser;
         if (user is null)
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 

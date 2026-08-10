@@ -23,6 +23,23 @@
     font-size: 0.86rem;
 }
 
+.dashboard-session-error {
+    flex-direction: column;
+    gap: 0.8rem;
+    color: #8b3f3f;
+    text-align: center;
+}
+
+.dashboard-session-error button {
+    padding: 0.55rem 0.9rem;
+    border: 1px solid #d9b5b5;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    cursor: pointer;
+    font-weight: 800;
+}
+
 .dashboard-sidebar {
     position: sticky;
     top: 0;

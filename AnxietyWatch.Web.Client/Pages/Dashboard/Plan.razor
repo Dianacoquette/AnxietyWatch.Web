@@ -4,8 +4,7 @@
 @using System.Globalization
 @using AnxietyWatch.Web.Client.Models.Api
 @inject IPlanService PlanService
-@inject ITokenStore TokenStore
-@inject IAuthService AuthService
+@inject IAuthSessionManager SessionManager
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -168,8 +167,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await TokenStore.RestoreFromStorageAsync();
-        currentPlanId = TokenStore.GetUser()?.PlanId;
+        currentPlanId = SessionManager.CurrentUser?.PlanId;
         await LoadPlansAsync();
     }
 
@@ -181,13 +179,13 @@
         try
         {
             plans = await PlanService.GetPlansAsync(cancellationTokenSource.Token);
-            currentPlanId = TokenStore.GetUser()?.PlanId;
+            currentPlanId = SessionManager.CurrentUser?.PlanId;
             currentPlan = plans.FirstOrDefault(plan => plan.Id == currentPlanId);
         }
         catch (ApiException exception) when (exception.StatusCode == 401)
         {
             errorMessage = ApiErrorMessages.For(exception);
-            await AuthService.LogoutAsync();
+            await SessionManager.ClearAsync();
             Navigation.NavigateTo("/login", replace: true);
         }
         catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)

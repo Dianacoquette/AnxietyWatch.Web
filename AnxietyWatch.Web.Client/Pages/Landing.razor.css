@@ -127,6 +127,13 @@
     color: var(--color-text);
 }
 
+button.plan-button:disabled,
+.modal-primary-button:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.2);
+    opacity: 0.6;
+}
+
 .button--outline:hover,
 .plan-button--outline:hover {
     border-color: var(--color-primary);
