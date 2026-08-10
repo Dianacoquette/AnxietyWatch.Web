@@ -1,7 +1,10 @@
 @page "/dashboard/help"
 @using System.ComponentModel.DataAnnotations
+@using AnxietyWatch.Web.Client.Models.Api
 @layout DashboardLayout
-@rendermode InteractiveWebAssembly
+@rendermode ClientRenderModes.WebAssembly
+@inject IContentService ContentService
+@implements IDisposable
 
 <PageTitle>Centro de ayuda | AnxietyWatch</PageTitle>
 
@@ -9,7 +12,7 @@
     <header class="help-header">
         <span>Soporte</span>
         <h1 id="help-title">Centro de ayuda</h1>
-        <p>Soporte por email · Respuesta en 24-48 h</p>
+        <p>Consulta las respuestas disponibles o revisa las opciones de contacto.</p>
     </header>
 
     <div class="help-grid">
@@ -19,7 +22,10 @@
                     <h2 id="faq-title">Preguntas frecuentes</h2>
                     <p>Encuentra respuestas rápidas sobre AnxietyWatch.</p>
                 </div>
-                <span>@filteredFaqs.Count() resultados</span>
+                @if (!isLoading && string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <span>@filteredFaqs.Count resultados</span>
+                }
             </header>
 
             <div class="input-icon-wrapper faq-search">
@@ -31,28 +37,38 @@
                        type="search"
                        placeholder="Buscar pregunta..."
                        aria-label="Buscar pregunta frecuente"
+                       disabled="@isLoading"
                        @bind="searchQuery"
                        @bind:event="oninput" />
             </div>
 
-            <div class="faq-filters" role="group" aria-label="Filtrar preguntas por categoría">
-                @foreach (var category in FaqCategories)
+            <div class="faq-list" aria-busy="@isLoading">
+                @if (isLoading)
                 {
-                    <button type="button"
-                            class="@(selectedCategory == category ? "is-active" : null)"
-                            aria-pressed="@(selectedCategory == category)"
-                            @onclick="() => SelectCategory(category)">
-                        @category
-                    </button>
+                    <div class="faq-empty" role="status">
+                        <strong>Cargando preguntas frecuentes...</strong>
+                    </div>
                 }
-            </div>
-
-            <div class="faq-list">
-                @if (!filteredFaqs.Any())
+                else if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="faq-empty" role="alert">
+                        <strong>No pudimos cargar las preguntas</strong>
+                        <p>@errorMessage</p>
+                        <button type="button" @onclick="LoadFaqAsync">Reintentar</button>
+                    </div>
+                }
+                else if (faqs.Count == 0)
+                {
+                    <div class="faq-empty" role="status">
+                        <strong>No hay preguntas disponibles</strong>
+                        <p>Vuelve a intentarlo más tarde.</p>
+                    </div>
+                }
+                else if (filteredFaqs.Count == 0)
                 {
                     <div class="faq-empty">
                         <strong>No encontramos resultados</strong>
-                        <p>Prueba con otra búsqueda o selecciona una categoría diferente.</p>
+                        <p>Prueba con otros términos de búsqueda.</p>
                     </div>
                 }
                 else
@@ -65,7 +81,6 @@
                                     aria-controls="faq-answer-@faq.Id"
                                     @onclick="() => ToggleFaq(faq.Id)">
                                 <span class="faq-question">@faq.Question</span>
-                                <span class="faq-category">@faq.Category</span>
                                 <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="m7 9 5 5 5-5" />
                                 </svg>
@@ -92,17 +107,17 @@
                         </svg>
                     </span>
                     <div>
-                        <h2 id="ticket-title">Enviar ticket</h2>
+                        <h2 id="ticket-title">Contactar con soporte</h2>
                         <p>Cuéntanos cómo podemos ayudarte.</p>
                     </div>
                 </header>
 
-                @if (ticketSentSuccessfully)
+                @if (!string.IsNullOrWhiteSpace(ticketNotice))
                 {
-                    <div class="ticket-success" role="status">¡Ticket enviado con éxito! Te responderemos por correo.</div>
+                    <div class="auth-alert" role="status">@ticketNotice</div>
                 }
 
-                <EditForm Model="ticketModel" OnValidSubmit="SubmitTicket" class="ticket-form">
+                <EditForm Model="ticketModel" OnValidSubmit="ShowTicketNotice" class="ticket-form">
                     <DataAnnotationsValidator />
 
                     <div class="ticket-field">
@@ -123,7 +138,6 @@
                                 <option value="Facturación">Facturación</option>
                                 <option value="Error Técnico">Error Técnico</option>
                             </InputSelect>
-                            <ValidationMessage For="@(() => ticketModel.Category)" />
                         </div>
 
                         <div class="ticket-field">
@@ -133,7 +147,6 @@
                                 <option value="Normal">Normal</option>
                                 <option value="Alta">Alta</option>
                             </InputSelect>
-                            <ValidationMessage For="@(() => ticketModel.Priority)" />
                         </div>
                     </div>
 
@@ -152,7 +165,7 @@
                             <path d="m3 11 18-8-8 18-2-8-8-2Z" />
                             <path d="m11 13 5-5" />
                         </svg>
-                        Enviar ticket
+                        Consultar disponibilidad
                     </button>
                 </EditForm>
             </section>
@@ -161,78 +174,73 @@
 </section>
 
 @code {
-    private static readonly IReadOnlyList<string> FaqCategories =
-        ["Todas", "Tokens", "Plan", "App", "Seguridad", "Soporte"];
-
-    private static readonly IReadOnlyList<FaqItem> Faqs =
-    [
-        new(1, "¿Cómo genero un token de vinculación?", "Desde el panel ve a Tokens de vinculación, pulsa Nuevo token y selecciona el tipo de acceso que necesitas. Cada código puede utilizarse una sola vez.", "Tokens"),
-        new(2, "¿Cuánto tiempo permanece activo un token?", "Los tokens sin utilizar caducan después de 30 días. Puedes regenerarlos o eliminarlos desde la tabla de tokens.", "Tokens"),
-        new(3, "¿Puedo cambiar de plan en cualquier momento?", "Sí. Puedes cambiar tu suscripción desde Mi plan. Los cambios de precio y límites se muestran antes de confirmar.", "Plan"),
-        new(4, "¿Cómo sincronizo la aplicación móvil?", "Instala la app, inicia sesión y utiliza un token de tipo App Móvil para vincular el dispositivo con tu cuenta.", "App"),
-        new(5, "¿Cómo protege AnxietyWatch mis datos?", "Aplicamos controles de acceso y tokens de un solo uso. Nunca compartas tus credenciales ni códigos de vinculación en canales públicos.", "Seguridad"),
-        new(6, "¿Cuándo recibiré respuesta a mi ticket?", "Nuestro equipo responde por correo normalmente en un plazo de 24 a 48 horas laborables.", "Soporte"),
-        new(7, "¿Qué ocurre si alcanzo el límite de tokens?", "Elimina un token que ya no necesites o cambia a un plan con mayor capacidad desde la sección Mi plan.", "Tokens"),
-        new(8, "¿Cómo recupero el acceso a mi cuenta?", "Usa el enlace de recuperación en el inicio de sesión. Si no puedes acceder a tu correo, envía un ticket a Soporte.", "Seguridad")
-    ];
-
+    private IReadOnlyList<FaqDto> faqs = [];
+    private readonly CancellationTokenSource cancellationTokenSource = new();
     private TicketModel ticketModel = new();
     private string searchQuery = string.Empty;
-    private string selectedCategory = "Todas";
     private int? openFaqId;
-    private bool ticketSentSuccessfully;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? ticketNotice;
 
-    private IEnumerable<FaqItem> filteredFaqs => Faqs.Where(faq =>
-        (selectedCategory == "Todas" || faq.Category == selectedCategory) &&
-        (string.IsNullOrWhiteSpace(searchQuery) ||
-         faq.Question.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
-         faq.Answer.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)));
+    private IReadOnlyList<FaqView> filteredFaqs => faqs
+        .Select((faq, index) => new FaqView(index, faq.Question, faq.Answer))
+        .Where(faq => string.IsNullOrWhiteSpace(searchQuery) ||
+            faq.Question.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            faq.Answer.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+        .ToArray();
 
-    private void SelectCategory(string category)
+    protected override Task OnInitializedAsync() => LoadFaqAsync();
+
+    private async Task LoadFaqAsync()
     {
-        selectedCategory = category;
+        isLoading = true;
+        errorMessage = null;
         openFaqId = null;
-    }
-
-    private void ToggleFaq(int faqId)
-    {
-        openFaqId = openFaqId == faqId ? null : faqId;
-    }
-
-    private void SubmitTicket()
-    {
-        ticketModel = new TicketModel();
-        ticketSentSuccessfully = true;
-    }
-
-    public sealed class FaqItem
-    {
-        public FaqItem(int id, string question, string answer, string category)
+        try
         {
-            Id = id;
-            Question = question;
-            Answer = answer;
-            Category = category;
+            faqs = await ContentService.GetFaqAsync(cancellationTokenSource.Token);
         }
-
-        public int Id { get; }
-        public string Question { get; }
-        public string Answer { get; }
-        public string Category { get; }
+        catch (ApiException exception)
+        {
+            faqs = [];
+            errorMessage = ApiErrorMessages.For(exception, "No pudimos cargar las preguntas frecuentes.");
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (Exception)
+        {
+            faqs = [];
+            errorMessage = "No pudimos cargar las preguntas frecuentes. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
+
+    private void ToggleFaq(int faqId) => openFaqId = openFaqId == faqId ? null : faqId;
+
+    private void ShowTicketNotice()
+    {
+        ticketNotice = "El envío de solicitudes desde la aplicación aún no está disponible. No se ha enviado ningún ticket.";
+    }
+
+    private sealed record FaqView(int Id, string Question, string Answer);
 
     public sealed class TicketModel
     {
         [Required(ErrorMessage = "El asunto es obligatorio.")]
         public string Subject { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Selecciona una categoría.")]
         public string Category { get; set; } = "General";
 
-        [Required(ErrorMessage = "Selecciona una prioridad.")]
         public string Priority { get; set; } = "Normal";
 
         [Required(ErrorMessage = "El mensaje es obligatorio.")]
         public string Message { get; set; } = string.Empty;
     }
+
+    public void Dispose() => cancellationTokenSource.Cancel();
 }

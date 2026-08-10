@@ -53,7 +53,7 @@ public static class HttpApiExtensions
         {
             retryAfter = (int)response.Headers.RetryAfter.Delta.Value.TotalSeconds;
         }
-        throw new ApiException(problem, problem.StatusCode, retryAfter);
+        throw new ApiException(problem, (int)response.StatusCode, retryAfter);
     }
 
     private static async Task<ApiProblemDetails> ReadProblemAsync(
@@ -63,10 +63,16 @@ public static class HttpApiExtensions
         try {
             return await response.Content
                        .ReadFromJsonAsync<ApiProblemDetails>(options, cancellationToken)
-                   ?? new ApiProblemDetails { Status = (int)response.StatusCode };
+                   ?? CreateFallbackProblem(response);
         }
         catch (JsonException) {
-            return new ApiProblemDetails { Status = (int)response.StatusCode };
+            return CreateFallbackProblem(response);
         }
     }
+
+    private static ApiProblemDetails CreateFallbackProblem(HttpResponseMessage response) => new()
+    {
+        Status = (int)response.StatusCode,
+        Title = response.ReasonPhrase
+    };
 }

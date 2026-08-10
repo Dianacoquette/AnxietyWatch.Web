@@ -1,5 +1,13 @@
 @inherits LayoutComponentBase
+@inject IServiceProvider Services
+@inject NavigationManager Navigation
 
+@if (!sessionReady)
+{
+    <div class="dashboard-session-loading" role="status">Restaurando tu sesión...</div>
+}
+else
+{
 <div class="dashboard-shell">
     <aside class="dashboard-sidebar">
         <a class="sidebar-brand" href="/dashboard" aria-label="Ir al resumen de AnxietyWatch">
@@ -34,6 +42,13 @@
                 <span>Tokens de vinculación</span>
             </NavLink>
 
+            <NavLink class="sidebar-link" href="/dashboard/episodes" Match="NavLinkMatch.All">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 19V9m5 10V5m5 14v-7m5 7V3" />
+                </svg>
+                <span>Episodios</span>
+            </NavLink>
+
             <NavLink class="sidebar-link" href="/dashboard/help" Match="NavLinkMatch.All">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" />
@@ -45,23 +60,12 @@
         </nav>
 
         <div class="sidebar-footer">
-            <section class="token-status" aria-labelledby="token-status-title">
-                <p class="token-plan" id="token-status-title">Plan Familiar</p>
-                <div class="token-status__header">
-                    <strong>5 de 5 tokens</strong>
-                </div>
-                <div class="token-progress" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5">
-                    <span></span>
-                </div>
-                <p class="token-renewal">Renovación @DateTime.Today.AddMonths(1).ToString("dd/MM/yyyy")</p>
-            </section>
-
-            <a class="logout-link" href="/login">
+            <button class="logout-link" type="button" disabled="@logoutPending" @onclick="LogoutAsync">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M10 5H5v14h5m4-4 4-3-4-3m4 3H9" />
                 </svg>
-                <span>Cerrar sesión</span>
-            </a>
+                <span>@(logoutPending ? "Cerrando sesión..." : "Cerrar sesión")</span>
+            </button>
         </div>
     </aside>
 
@@ -78,11 +82,18 @@
                 </a>
 
                 <details class="user-menu">
-                    <summary class="user-profile" aria-label="Abrir menú del perfil de Alex Rivera">
-                        <span class="user-avatar" aria-hidden="true">AR</span>
+                    <summary class="user-profile" aria-label="Abrir menú del perfil de @(CurrentUser!.FullName)">
+                        @if (!string.IsNullOrWhiteSpace(CurrentUser.AvatarUrl))
+                        {
+                            <img class="user-avatar user-avatar--image" src="@CurrentUser.AvatarUrl" alt="" />
+                        }
+                        else
+                        {
+                            <span class="user-avatar" aria-hidden="true">@Initials</span>
+                        }
                         <span class="user-copy">
-                            <strong>Alex Rivera</strong>
-                            <small>Plan Profesional</small>
+                            <strong>@CurrentUser.FullName</strong>
+                            <small>Plan @PlanName</small>
                         </span>
                         <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="m8 10 4 4 4-4" />
@@ -91,11 +102,18 @@
 
                     <div class="profile-dropdown">
                         <header class="profile-dropdown__header">
-                            <span class="user-avatar user-avatar--large" aria-hidden="true">AR</span>
+                            @if (!string.IsNullOrWhiteSpace(CurrentUser.AvatarUrl))
+                            {
+                                <img class="user-avatar user-avatar--large user-avatar--image" src="@CurrentUser.AvatarUrl" alt="" />
+                            }
+                            else
+                            {
+                                <span class="user-avatar user-avatar--large" aria-hidden="true">@Initials</span>
+                            }
                             <span class="profile-dropdown__identity">
-                                <strong>Alex Rivera</strong>
-                                <small>alex@demo.com</small>
-                                <span>Plan Profesional</span>
+                                <strong>@CurrentUser.FullName</strong>
+                                <small>@CurrentUser.Email</small>
+                                <span>Plan @PlanName</span>
                             </span>
                         </header>
 
@@ -119,12 +137,12 @@
 
                             <hr />
 
-                            <a class="profile-logout" href="/login">
+                            <button class="profile-logout" type="button" disabled="@logoutPending" @onclick="LogoutAsync">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="M10 5H5v14h5m4-4 4-3-4-3m4 3H9" />
                                 </svg>
-                                <span>Cerrar sesión</span>
-                            </a>
+                                <span>@(logoutPending ? "Cerrando sesión..." : "Cerrar sesión")</span>
+                            </button>
                         </nav>
                     </div>
                 </details>
@@ -136,3 +154,74 @@
         </main>
     </div>
 </div>
+}
+
+@code {
+    private UserDto? CurrentUser;
+    private bool sessionReady;
+    private bool logoutPending;
+
+    private ITokenStore TokenStore => (ITokenStore)(Services.GetService(typeof(ITokenStore))
+        ?? throw new InvalidOperationException("ITokenStore no está disponible en el cliente."));
+    private IAuthService AuthService => (IAuthService)(Services.GetService(typeof(IAuthService))
+        ?? throw new InvalidOperationException("IAuthService no está disponible en el cliente."));
+
+    private string Initials => GetInitials(CurrentUser?.FullName ?? string.Empty);
+    private string PlanName => (CurrentUser?.PlanId ?? string.Empty).Trim().ToLowerInvariant() switch
+    {
+        "free" => "Gratuito",
+        "individual" => "Individual",
+        "family" => "Familiar",
+        "professional" => "Profesional",
+        var planId => string.IsNullOrWhiteSpace(planId) ? "sin asignar" : planId
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await TokenStore.RestoreFromStorageAsync();
+        CurrentUser = TokenStore.GetUser();
+        if (CurrentUser is null || string.IsNullOrWhiteSpace(TokenStore.GetAccessToken()) || TokenStore.GetExpiresAt() <= DateTimeOffset.UtcNow)
+        {
+            await AuthService.LogoutAsync();
+            Navigation.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        sessionReady = true;
+        StateHasChanged();
+    }
+
+    private async Task LogoutAsync()
+    {
+        if (logoutPending)
+        {
+            return;
+        }
+
+        logoutPending = true;
+        try
+        {
+            await AuthService.LogoutAsync();
+        }
+        finally
+        {
+            Navigation.NavigateTo("/login", replace: true);
+        }
+    }
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant()
+        };
+    }
+}

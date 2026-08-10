@@ -32,5 +32,11 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredServ
 
 // Servicios de aplicación.
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPlanService, PlanService>();
+builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IEpisodeService, EpisodeService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 await builder.Build().RunAsync();
