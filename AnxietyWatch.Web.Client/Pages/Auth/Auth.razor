@@ -481,7 +481,7 @@
             });
             Navigation.NavigateTo("/dashboard");
         }
-        catch (UnauthorizedAccessException)
+        catch (ApiException exception) when (exception.StatusCode == 401)
         {
             authError = "Correo o contraseña incorrectos.";
         }
