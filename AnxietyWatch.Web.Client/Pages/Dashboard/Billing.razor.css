@@ -48,6 +48,81 @@
     box-shadow: 0 12px 36px rgba(52, 72, 63, 0.06);
 }
 
+.billing-overview--single {
+    grid-template-columns: 1fr;
+}
+
+.billing-state {
+    padding: 2rem;
+    border: 1px solid var(--billing-line);
+    border-radius: 16px;
+    background: #fff;
+    text-align: center;
+}
+
+.billing-state--error {
+    border-color: #edc9c9;
+    background: #fff8f8;
+    color: #934545;
+}
+
+.billing-plan-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin: 1.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.billing-plan-features li {
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: var(--billing-sage-soft);
+    color: #4b7965;
+    font-size: 0.7rem;
+    font-weight: 750;
+}
+
+.billing-unavailable {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+}
+
+.billing-unavailable h2,
+.billing-unavailable p {
+    margin: 0;
+}
+
+.billing-unavailable p {
+    margin-top: 0.4rem;
+    color: var(--billing-muted);
+    line-height: 1.6;
+}
+
+.billing-unavailable__icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 12px;
+    background: #f2eff9;
+    color: var(--billing-purple);
+}
+
+.billing-unavailable__icon svg {
+    width: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+}
+
 .plan-summary,
 .payment-summary {
     min-width: 0;

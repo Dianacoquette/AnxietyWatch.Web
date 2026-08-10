@@ -1,6 +1,13 @@
 @page "/dashboard/plan"
 @layout DashboardLayout
-@rendermode InteractiveWebAssembly
+@rendermode ClientRenderModes.WebAssembly
+@using System.Globalization
+@using AnxietyWatch.Web.Client.Models.Api
+@inject IPlanService PlanService
+@inject ITokenStore TokenStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Mi plan | AnxietyWatch</PageTitle>
 
@@ -9,151 +16,141 @@
         <h1 id="plan-page-title">Mi plan</h1>
     </header>
 
-    <article class="current-plan-card" aria-labelledby="current-plan-title">
-        <div class="current-plan-content">
-            <span class="active-plan-badge">Plan activo · Familiar</span>
+    @if (isLoading)
+    {
+        <p role="status" aria-live="polite">Cargando tu plan...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div role="alert">
+            <p>@errorMessage</p>
+            <button class="plan-action plan-action--dark" type="button" @onclick="LoadPlansAsync">Reintentar</button>
+        </div>
+    }
+    else if (plans.Count == 0)
+    {
+        <div role="status">
+            <p>No hay planes disponibles por el momento.</p>
+            <button class="plan-action plan-action--dark" type="button" @onclick="LoadPlansAsync">Reintentar</button>
+        </div>
+    }
+    else
+    {
+        @if (currentPlan is not null)
+        {
+            <article class="current-plan-card" aria-labelledby="current-plan-title">
+                <div class="current-plan-content">
+                    <span class="active-plan-badge">Plan activo · @currentPlan.Name</span>
 
-            <div class="current-plan-heading">
-                <h2 id="current-plan-title">Familiar</h2>
-                <div class="current-plan-price">
-                    <strong>$8.99</strong>
-                    <span>/mes</span>
+                    <div class="current-plan-heading">
+                        <h2 id="current-plan-title">@currentPlan.Name</h2>
+                        <div class="current-plan-price">
+                            <strong>@FormatPrice(currentPlan.PriceMonthly)</strong>
+                            <span>/mes</span>
+                        </div>
+                        <p>@currentPlan.IdealFor</p>
+                    </div>
+
+                    <ul class="benefits-grid" aria-label="Beneficios del plan @currentPlan.Name">
+                        @foreach (var feature in currentPlan.Features)
+                        {
+                            <li><span aria-hidden="true">✓</span>@feature</li>
+                        }
+                    </ul>
                 </div>
-                <p>Cuida de ti y de quienes más quieres</p>
+
+                <div class="current-plan-visual" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="9" cy="8" r="3" />
+                        <circle cx="17" cy="9" r="2" />
+                        <path d="M3.5 20c.4-4.3 2.2-6.5 5.5-6.5s5.1 2.2 5.5 6.5m.5-5.5c2.9 0 4.6 1.8 5 5.5" />
+                    </svg>
+                </div>
+            </article>
+        }
+        else
+        {
+            <p role="alert">No pudimos identificar tu plan actual en el catálogo disponible.</p>
+        }
+
+        <section class="change-plan-section" aria-labelledby="change-plan-title">
+            <header class="section-header">
+                <h2 id="change-plan-title">Planes disponibles</h2>
+                <p>Consulta las opciones actuales. Los cambios de plan todavía requieren asistencia.</p>
+            </header>
+
+            <div class="plans-grid">
+                @foreach (var plan in plans)
+                {
+                    <article class="option-card option-card--@plan.Id">
+                        <header class="option-card__header">
+                            <h3>@plan.Name</h3>
+                            @if (plan.Id == currentPlanId)
+                            {
+                                <span class="change-badge change-badge--upgrade">Actual</span>
+                            }
+                        </header>
+                        <div class="option-price">
+                            <strong>@FormatPrice(plan.PriceMonthly)</strong>
+                            <span>/mes</span>
+                        </div>
+                        <p>@plan.IdealFor</p>
+                        <button class="plan-action plan-action--dark"
+                                type="button"
+                                disabled="@(plan.Id == currentPlanId)"
+                                aria-label="Solicitar información para cambiar al plan @plan.Name"
+                                @onclick="() => OpenPlanModal(plan)">
+                            @(plan.Id == currentPlanId ? "Plan actual" : $"Consultar cambio a {plan.Name}")
+                        </button>
+                    </article>
+                }
             </div>
-
-            <ul class="benefits-grid" aria-label="Beneficios del plan Familiar">
-                <li><span aria-hidden="true">✓</span>Todo lo de Individual</li>
-                <li><span aria-hidden="true">✓</span>Hasta 5 miembros</li>
-                <li><span aria-hidden="true">✓</span>Tokens de vinculación</li>
-                <li><span aria-hidden="true">✓</span>Panel familiar</li>
-                <li><span aria-hidden="true">✓</span>Alertas cruzadas</li>
-                <li><span aria-hidden="true">✓</span>Historial compartido</li>
-            </ul>
-        </div>
-
-        <div class="current-plan-visual" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-                <circle cx="9" cy="8" r="3" />
-                <circle cx="17" cy="9" r="2" />
-                <path d="M3.5 20c.4-4.3 2.2-6.5 5.5-6.5s5.1 2.2 5.5 6.5m.5-5.5c2.9 0 4.6 1.8 5 5.5" />
-            </svg>
-        </div>
-    </article>
-
-    <section class="change-plan-section" aria-labelledby="change-plan-title">
-        <header class="section-header">
-            <h2 id="change-plan-title">Cambiar de plan</h2>
-            <p>Elige una opción diferente según tus necesidades actuales.</p>
-        </header>
-
-        <div class="plans-grid">
-            <article class="option-card option-card--free">
-                <header class="option-card__header">
-                    <h3>Gratuito</h3>
-                    <span class="change-badge change-badge--downgrade">Downgrade</span>
-                </header>
-                <div class="option-price">
-                    <strong>$0</strong>
-                    <span>/mes</span>
-                </div>
-                <p>Funciones esenciales para comenzar a registrar tu bienestar.</p>
-                <button class="plan-action plan-action--dark"
-                        type="button"
-                        aria-label="Cambiar al plan Gratuito"
-                        @onclick="() => OpenPlanModal(FreePlanChange)">
-                    Cambiar a Gratuito
-                </button>
-            </article>
-
-            <article class="option-card option-card--individual">
-                <header class="option-card__header">
-                    <h3>Individual</h3>
-                    <span class="change-badge change-badge--downgrade">Downgrade</span>
-                </header>
-                <div class="option-price">
-                    <strong>$4.99</strong>
-                    <span>/mes</span>
-                </div>
-                <p>Seguimiento completo, análisis y recomendaciones personales.</p>
-                <button class="plan-action plan-action--sage"
-                        type="button"
-                        aria-label="Cambiar al plan Individual"
-                        @onclick="() => OpenPlanModal(IndividualPlanChange)">
-                    Cambiar a Individual
-                </button>
-            </article>
-
-            <article class="option-card option-card--professional">
-                <header class="option-card__header">
-                    <h3>Profesional</h3>
-                    <span class="change-badge change-badge--upgrade">Upgrade</span>
-                </header>
-                <div class="option-price option-price--purple">
-                    <strong>$19.99</strong>
-                    <span>/mes</span>
-                </div>
-                <p>Reportes avanzados y herramientas para un seguimiento profundo.</p>
-                <button class="plan-action plan-action--purple"
-                        type="button"
-                        aria-label="Cambiar al plan Profesional"
-                        @onclick="() => OpenPlanModal(ProfessionalPlanChange)">
-                    Cambiar a Profesional
-                </button>
-            </article>
-        </div>
-    </section>
+        </section>
+    }
 
     @if (selectedPlanChange is not null)
     {
         <div class="upgrade-overlay" role="presentation" @onclick="ClosePlanModal">
-            <section class="upgrade-modal upgrade-modal--@selectedPlanChange.Tone"
+            <section class="upgrade-modal upgrade-modal--@selectedPlanChange.Id"
                      role="dialog"
                      aria-modal="true"
                      aria-labelledby="upgrade-modal-title"
                      @onclick:stopPropagation="true">
                 <header class="upgrade-modal__header">
-                    <h2 id="upgrade-modal-title">Cambiar de plan</h2>
+                    <h2 id="upgrade-modal-title">Cambio de plan no disponible</h2>
                     <button class="upgrade-modal__close"
                             type="button"
-                            aria-label="Cerrar confirmación"
+                            aria-label="Cerrar aviso"
                             @onclick="ClosePlanModal">×</button>
                 </header>
 
                 <div class="plan-comparison" aria-label="Comparación de planes">
-                    <article class="comparison-card comparison-card--current">
-                        <span class="comparison-label">Plan actual</span>
-                        <strong class="comparison-badge comparison-badge--current">Familiar</strong>
-                        <p><strong>$8.99</strong><span>/mes</span></p>
-                    </article>
+                    @if (currentPlan is not null)
+                    {
+                        <article class="comparison-card comparison-card--current">
+                            <span class="comparison-label">Plan actual</span>
+                            <strong class="comparison-badge comparison-badge--current">@currentPlan.Name</strong>
+                            <p><strong>@FormatPrice(currentPlan.PriceMonthly)</strong><span>/mes</span></p>
+                        </article>
 
-                    <span class="comparison-arrow" aria-hidden="true">→</span>
+                        <span class="comparison-arrow" aria-hidden="true">→</span>
+                    }
 
                     <article class="comparison-card comparison-card--new">
-                        <span class="comparison-label comparison-label--accent">Nuevo plan</span>
+                        <span class="comparison-label comparison-label--accent">Plan consultado</span>
                         <strong class="comparison-badge comparison-badge--new">@selectedPlanChange.Name</strong>
-                        <p><strong>@selectedPlanChange.Price</strong><span>/mes</span></p>
+                        <p><strong>@FormatPrice(selectedPlanChange.PriceMonthly)</strong><span>/mes</span></p>
                     </article>
                 </div>
 
                 <section class="upgrade-benefits" aria-labelledby="upgrade-benefits-title">
-                    <h3 id="upgrade-benefits-title">@selectedPlanChange.BenefitsTitle</h3>
-                    <ul>
-                        @foreach (var benefit in selectedPlanChange.Benefits)
-                        {
-                            <li><span aria-hidden="true">✓</span>@benefit</li>
-                        }
-                    </ul>
-                    <p>@selectedPlanChange.MoreBenefits</p>
+                    <h3 id="upgrade-benefits-title">Este cambio aún no puede realizarse en línea.</h3>
+                    <p>Visita el Centro de ayuda para consultar las opciones disponibles con soporte.</p>
                 </section>
 
                 <footer class="upgrade-modal__actions">
-                    <button class="upgrade-button upgrade-button--cancel"
-                            type="button"
-                            @onclick="ClosePlanModal">Cancelar</button>
-                    <button class="upgrade-button upgrade-button--confirm"
-                            type="button"
-                            @onclick="ClosePlanModal">Confirmar cambio</button>
+                    <button class="upgrade-button upgrade-button--cancel" type="button" @onclick="ClosePlanModal">Volver</button>
+                    <button class="upgrade-button upgrade-button--confirm" type="button" @onclick="GoToHelp">Ir al Centro de ayuda</button>
                 </footer>
             </section>
         </div>
@@ -161,65 +158,67 @@
 </section>
 
 @code {
-    private PlanChangeOption? selectedPlanChange;
+    private IReadOnlyList<PlanDto> plans = [];
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private PlanDto? currentPlan;
+    private PlanDto? selectedPlanChange;
+    private string? currentPlanId;
+    private string? errorMessage;
+    private bool isLoading = true;
 
-    private static readonly PlanChangeOption FreePlanChange = new(
-        "Gratuito",
-        "$0",
-        "free",
-        "Conservarás acceso a:",
-        [
-            "Registro de bienestar básico",
-            "Hasta 5 registros mensuales",
-            "Resumen semanal",
-            "Ejercicios de respiración",
-            "Acceso a la comunidad"
-        ],
-        "+ 2 más...");
-
-    private static readonly PlanChangeOption IndividualPlanChange = new(
-        "Individual",
-        "$4.99",
-        "individual",
-        "Conservarás acceso a:",
-        [
-            "Todo lo de Gratuito",
-            "Registros ilimitados",
-            "Análisis de patrones con IA",
-            "Recomendaciones personalizadas",
-            "Historial completo"
-        ],
-        "+ 3 más...");
-
-    private static readonly PlanChangeOption ProfessionalPlanChange = new(
-        "Profesional",
-        "$19.99",
-        "professional",
-        "Ganarás acceso a:",
-        [
-            "Todo lo de Familiar",
-            "Hasta 20 pacientes activos",
-            "Reportes clínicos detallados",
-            "Panel de gestión de pacientes",
-            "Notas y seguimiento clínico"
-        ],
-        "+ 5 más...");
-
-    private void OpenPlanModal(PlanChangeOption plan)
+    protected override async Task OnInitializedAsync()
     {
-        selectedPlanChange = plan;
+        await TokenStore.RestoreFromStorageAsync();
+        currentPlanId = TokenStore.GetUser()?.PlanId;
+        await LoadPlansAsync();
     }
 
-    private void ClosePlanModal()
+    private async Task LoadPlansAsync()
     {
+        isLoading = true;
+        errorMessage = null;
         selectedPlanChange = null;
+        try
+        {
+            plans = await PlanService.GetPlansAsync(cancellationTokenSource.Token);
+            currentPlanId = TokenStore.GetUser()?.PlanId;
+            currentPlan = plans.FirstOrDefault(plan => plan.Id == currentPlanId);
+        }
+        catch (ApiException exception) when (exception.StatusCode == 401)
+        {
+            errorMessage = ApiErrorMessages.For(exception);
+            await AuthService.LogoutAsync();
+            Navigation.NavigateTo("/login", replace: true);
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (ApiException exception)
+        {
+            plans = [];
+            currentPlan = null;
+            errorMessage = ApiErrorMessages.For(exception, "No pudimos cargar los planes.");
+        }
+        catch (Exception)
+        {
+            plans = [];
+            currentPlan = null;
+            errorMessage = "No pudimos cargar los planes. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private sealed record PlanChangeOption(
-        string Name,
-        string Price,
-        string Tone,
-        string BenefitsTitle,
-        IReadOnlyList<string> Benefits,
-        string MoreBenefits);
+    private static string FormatPrice(decimal price) =>
+        $"${price.ToString("0.00", CultureInfo.InvariantCulture)}";
+
+    private void OpenPlanModal(PlanDto plan) => selectedPlanChange = plan;
+
+    private void ClosePlanModal() => selectedPlanChange = null;
+
+    private void GoToHelp() => Navigation.NavigateTo("/dashboard/help");
+
+    public void Dispose() => cancellationTokenSource.Cancel();
 }

@@ -66,6 +66,37 @@
     min-width: 0;
 }
 
+.operation-message {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid #b9dfc4;
+    border-radius: 11px;
+    background: #edf8f0;
+    color: #39724b;
+    font-size: 0.75rem;
+}
+
+.operation-message--error {
+    border-color: #edc2c2;
+    background: #fff2f2;
+    color: #973c3c;
+}
+
+.operation-message button {
+    padding: 0.4rem 0.65rem;
+    border: 1px solid currentColor;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+}
+
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -252,6 +283,29 @@
     white-space: nowrap;
 }
 
+.table-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.export-token-action {
+    min-height: 38px;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--sage-500);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--sage-700);
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .new-token-action span {
     font-size: 1rem;
     font-weight: 400;
@@ -259,6 +313,24 @@
 
 .table-scroll {
     overflow-x: auto;
+}
+
+.table-state {
+    display: flex;
+    min-height: 180px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.table-state strong {
+    color: var(--ink);
+    font-size: 0.9rem;
 }
 
 table {
@@ -681,6 +753,48 @@ code {
     font-size: 0.63rem;
 }
 
+.modal-message {
+    margin: 0.8rem 0 0;
+    color: #a23f3f;
+    font-size: 0.7rem;
+    line-height: 1.45;
+}
+
+.modal-message--success {
+    color: #39724b;
+}
+
+.share-modal__description {
+    margin: 1.25rem 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.share-email-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: #4f5a54;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.share-email-input {
+    width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #d7dcda;
+    border-radius: 9px;
+    color: var(--ink);
+    font: inherit;
+}
+
+.share-email-input:focus {
+    border-color: var(--sage-500);
+    outline: 3px solid rgba(94, 139, 126, 0.16);
+}
+
 .token-modal__actions {
     display: flex;
     gap: 0.75rem;
@@ -829,6 +943,14 @@ code {
     .new-token-action {
         width: 100%;
         justify-content: center;
+    }
+
+    .table-header__actions {
+        width: 100%;
+    }
+
+    .export-token-action {
+        flex: 1;
     }
 
     .token-modal-overlay {

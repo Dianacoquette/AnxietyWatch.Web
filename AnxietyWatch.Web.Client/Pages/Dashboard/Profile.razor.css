@@ -12,6 +12,13 @@
     color: var(--profile-ink);
 }
 
+.profile-loading {
+    width: min(100%, 900px);
+    margin: 2rem auto;
+    color: #7d8982;
+    font-size: 0.82rem;
+}
+
 .profile-page__header {
     margin-bottom: 1.5rem;
 }
@@ -96,6 +103,11 @@
     font-weight: 700;
 }
 
+.profile-avatar--image {
+    box-sizing: border-box;
+    object-fit: cover;
+}
+
 .avatar-edit-button {
     position: absolute;
     right: -2px;
@@ -143,6 +155,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.15rem;
     margin-top: 1.5rem;
+}
+
+.form-field--wide {
+    grid-column: 1 / -1;
 }
 
 .form-field label {
@@ -288,6 +304,52 @@
     margin-top: 1.5rem;
 }
 
+.settings-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+    margin-top: 1.5rem;
+}
+
+.settings-fields > .form-field {
+    grid-column: 1 / -1;
+}
+
+.setting-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border: 1px solid var(--profile-border);
+    border-radius: 10px;
+    background: #f8faf8;
+    cursor: pointer;
+}
+
+.setting-toggle input {
+    width: 17px;
+    height: 17px;
+    margin: 0.1rem 0 0;
+    accent-color: var(--profile-purple);
+}
+
+.setting-toggle span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.setting-toggle strong {
+    color: #59645e;
+    font-size: 0.74rem;
+}
+
+.setting-toggle small {
+    color: var(--profile-muted);
+    font-size: 0.68rem;
+    line-height: 1.45;
+}
+
 .password-fields .form-field:first-child {
     grid-column: 1 / -1;
 }
@@ -301,6 +363,12 @@
     color: #4f7860;
     font-size: 0.72rem;
     font-weight: 700;
+}
+
+.inline-notice--error {
+    border-color: #efcccc;
+    background: #fff4f4;
+    color: #a64141;
 }
 
 .danger-card {
@@ -340,6 +408,13 @@
 
 .danger-card button:hover {
     background: #fff0f0;
+}
+
+.danger-card button:disabled {
+    border-color: #dfbcbc;
+    color: #a96d6d;
+    cursor: not-allowed;
+    opacity: 0.75;
 }
 
 .delete-account-overlay {
@@ -445,7 +520,8 @@
 
 @media (max-width: 700px) {
     .profile-fields,
-    .password-fields {
+    .password-fields,
+    .settings-fields {
         grid-template-columns: 1fr;
     }
 

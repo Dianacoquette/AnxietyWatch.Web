@@ -14,6 +14,15 @@
     color: var(--ink);
 }
 
+.dashboard-session-loading {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    background: #f4f7f5;
+    color: #77817d;
+    font-size: 0.86rem;
+}
+
 .dashboard-sidebar {
     position: sticky;
     top: 0;
@@ -181,12 +190,22 @@
     gap: 0.75rem;
     min-height: 42px;
     padding: 0.45rem 0.75rem;
+    border: 0;
     border-radius: 10px;
+    background: transparent;
     color: #707a76;
+    cursor: pointer;
+    font-family: inherit;
     font-size: 0.86rem;
     font-weight: 650;
     text-decoration: none;
+    text-align: left;
     transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.logout-link:disabled {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .logout-link:hover {
@@ -298,6 +317,11 @@
     font-weight: 800;
 }
 
+.user-avatar--image {
+    box-sizing: border-box;
+    object-fit: cover;
+}
+
 .user-copy {
     display: flex;
     min-width: 0;
@@ -397,21 +421,28 @@
     gap: 0.2rem;
 }
 
-.profile-dropdown__links a {
+.profile-dropdown__links a,
+.profile-dropdown__links button {
     display: flex;
     min-height: 42px;
     align-items: center;
     gap: 0.7rem;
     padding: 0.55rem 0.65rem;
+    border: 0;
     border-radius: 9px;
+    background: transparent;
     color: #5f6b66;
+    cursor: pointer;
+    font-family: inherit;
     font-size: 0.78rem;
     font-weight: 650;
     text-decoration: none;
+    text-align: left;
     transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.profile-dropdown__links a:hover {
+.profile-dropdown__links a:hover,
+.profile-dropdown__links button:hover {
     background: var(--sage-50);
     color: var(--sage-700);
 }
@@ -436,6 +467,11 @@
     color: #a52f2f;
 }
 
+.profile-dropdown__links button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
 .dashboard-main {
     box-sizing: border-box;
     width: 100%;
@@ -450,7 +486,8 @@
 .back-link:focus-visible,
 .new-token-button:focus-visible,
 .user-profile:focus-visible,
-.profile-dropdown__links a:focus-visible {
+.profile-dropdown__links a:focus-visible,
+.profile-dropdown__links button:focus-visible {
     outline: 3px solid rgba(94, 139, 126, 0.28);
     outline-offset: 3px;
 }

@@ -1,6 +1,10 @@
 @page "/"
-@rendermode InteractiveWebAssembly
+@rendermode ClientRenderModes.WebAssembly
 @using System.Globalization
+@using AnxietyWatch.Web.Client.Models.Api
+@inject IPlanService PlanService
+@inject IContentService ContentService
+@implements IDisposable
 
 <PageTitle>AnxietyWatch | Monitorea, comprende y actúa</PageTitle>
 
@@ -177,27 +181,32 @@
                 <h2 id="faq-title">Preguntas frecuentes</h2>
             </header>
 
-            <div class="faq-list">
-                <details>
-                    <summary>¿Qué es AnxietyWatch?</summary>
-                    <p>Es una aplicación de seguimiento personal que te ayuda a registrar cómo te sientes, observar patrones y acceder a recursos de bienestar emocional.</p>
-                </details>
-                <details>
-                    <summary>¿Puedo usar AnxietyWatch gratis?</summary>
-                    <p>Sí. El plan Gratuito incluye registros básicos, un resumen semanal y ejercicios de respiración para que puedas comenzar sin costo.</p>
-                </details>
-                <details>
-                    <summary>¿Cómo cancelo mi suscripción?</summary>
-                    <p>Puedes cancelar desde la configuración de tu plan. El acceso de pago continuará hasta el final del periodo ya contratado.</p>
-                </details>
-                <details>
-                    <summary>¿Mis datos están seguros?</summary>
-                    <p>La privacidad forma parte del diseño del producto. Tú controlas tu información y decides cuándo y con quién compartirla.</p>
-                </details>
-                <details>
-                    <summary>¿Puedo vincular a mi familia?</summary>
-                    <p>Sí. El plan Familiar permite crear hasta cinco perfiles y usar tokens de vinculación para conectar a cada miembro de forma privada.</p>
-                </details>
+            <div class="faq-list" aria-busy="@isFaqLoading">
+                @if (isFaqLoading)
+                {
+                    <p role="status">Cargando preguntas frecuentes...</p>
+                }
+                else if (!string.IsNullOrWhiteSpace(faqError))
+                {
+                    <div role="alert">
+                        <p>@faqError</p>
+                        <button class="button button--outline" type="button" @onclick="LoadFaqAsync">Reintentar</button>
+                    </div>
+                }
+                else if (faqs.Count == 0)
+                {
+                    <p>No hay preguntas frecuentes disponibles por el momento.</p>
+                }
+                else
+                {
+                    @foreach (var faq in faqs)
+                    {
+                        <details>
+                            <summary>@faq.Question</summary>
+                            <p>@faq.Answer</p>
+                        </details>
+                    }
+                }
             </div>
         </div>
     </section>
@@ -210,86 +219,55 @@
                 <p>Empieza gratis y cambia de plan cuando tus necesidades evolucionen.</p>
 
                 <div class="billing-toggle" role="group" aria-label="Ciclo de facturación">
-                    <button type="button" class="@(isAnnual ? "" : "is-active")" aria-pressed="@(!isAnnual)" @onclick="() => isAnnual = false">
+                    <button type="button" class="@(isAnnual ? "" : "is-active")" aria-pressed="@(!isAnnual)" disabled="@isPlansLoading" @onclick="() => isAnnual = false">
                         Mensual
                     </button>
-                    <button type="button" class="@(isAnnual ? "is-active" : "")" aria-pressed="@isAnnual" @onclick="() => isAnnual = true">
+                    <button type="button" class="@(isAnnual ? "is-active" : "")" aria-pressed="@isAnnual" disabled="@isPlansLoading" @onclick="() => isAnnual = true">
                         Anual
-                        <span>2 meses gratis</span>
                     </button>
                 </div>
             </header>
 
-            <div class="pricing-grid">
-                <article class="plan-card">
-                    <header>
-                        <h3>Gratuito</h3>
-                        <p>Para comenzar a conocerte.</p>
-                    </header>
-                    <div class="plan-price"><strong>$0</strong><span>/@BillingPeriod</span></div>
-                    <ul>
-                        <li>5 registros al mes</li>
-                        <li>Resumen semanal básico</li>
-                        <li>Ejercicios de respiración</li>
-                    </ul>
-                    <div class="plan-card-actions">
-                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(FreePlan)">Ver detalles</button>
-                        <a class="plan-button plan-button--outline" href="/register?plan=free">Comenzar gratis</a>
-                    </div>
-                </article>
-
-                <article class="plan-card">
-                    <header>
-                        <h3>Individual</h3>
-                        <p>Seguimiento completo para ti.</p>
-                    </header>
-                    <div class="plan-price"><strong>@GetPrice(4.99m)</strong><span>/@BillingPeriod</span></div>
-                    <ul>
-                        <li>Registros ilimitados</li>
-                        <li>Análisis con IA</li>
-                        <li>Recomendaciones personales</li>
-                    </ul>
-                    <div class="plan-card-actions">
-                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(IndividualPlan)">Ver detalles</button>
-                        <a class="plan-button plan-button--outline" href="/register?plan=individual">Elegir Individual</a>
-                    </div>
-                </article>
-
-                <article class="plan-card plan-card--featured">
-                    <span class="popular-badge">Más popular</span>
-                    <header>
-                        <h3>Familiar</h3>
-                        <p>Bienestar compartido en familia.</p>
-                    </header>
-                    <div class="plan-price"><strong>@GetPrice(8.99m)</strong><span>/@BillingPeriod</span></div>
-                    <ul>
-                        <li>Hasta 5 miembros</li>
-                        <li>Panel familiar privado</li>
-                        <li>Alertas y tendencias</li>
-                    </ul>
-                    <div class="plan-card-actions">
-                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(FamilyPlan)">Ver detalles</button>
-                        <a class="plan-button plan-button--primary" href="/register?plan=family">Elegir Familiar</a>
-                    </div>
-                </article>
-
-                <article class="plan-card">
-                    <header>
-                        <h3>Profesional</h3>
-                        <p>Herramientas avanzadas y reportes.</p>
-                    </header>
-                    <div class="plan-price"><strong>@GetPrice(19.99m)</strong><span>/@BillingPeriod</span></div>
-                    <ul>
-                        <li>Panel profesional</li>
-                        <li>Reportes detallados</li>
-                        <li>Soporte prioritario</li>
-                    </ul>
-                    <div class="plan-card-actions">
-                        <button class="plan-details-button" type="button" @onclick="() => OpenPlanDetails(ProfessionalPlan)">Ver detalles</button>
-                        <a class="plan-button plan-button--outline" href="/register?plan=professional">Elegir Profesional</a>
-                    </div>
-                </article>
-            </div>
+            @if (isPlansLoading)
+            {
+                <p role="status" aria-live="polite">Cargando planes...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(plansError))
+            {
+                <div role="alert">
+                    <p>@plansError</p>
+                    <button class="button button--outline" type="button" @onclick="LoadPlansAsync">Reintentar</button>
+                </div>
+            }
+            else if (plans.Count == 0)
+            {
+                <p>No hay planes disponibles por el momento.</p>
+            }
+            else
+            {
+                <div class="pricing-grid">
+                    @foreach (var plan in plans)
+                    {
+                        <article class="plan-card">
+                            <header>
+                                <h3>@plan.Name</h3>
+                                <p>@plan.IdealFor</p>
+                            </header>
+                            <div class="plan-price"><strong>@GetPrice(plan)</strong><span>/@BillingPeriod</span></div>
+                            <ul>
+                                @foreach (var feature in plan.Features)
+                                {
+                                    <li>@feature</li>
+                                }
+                            </ul>
+                            <div class="plan-card-actions">
+                                <button class="plan-details-button" type="button" disabled="@isPlansLoading" @onclick="() => OpenPlanDetails(plan)">Ver detalles</button>
+                                <a class="plan-button plan-button--outline" href="@GetRegistrationUrl(plan.Id)">Elegir @plan.Name</a>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
         </div>
     </section>
 
@@ -306,32 +284,39 @@
             <header class="section-heading">
                 <p class="section-eyebrow">Experiencias reales</p>
                 <h2 id="testimonials-title">Personas que avanzan a su ritmo</h2>
-                <p>Historias ficticias que muestran cómo AnxietyWatch puede acompañar diferentes contextos.</p>
+                <p>Experiencias compartidas por nuestra comunidad.</p>
             </header>
 
-            <div class="testimonials-grid">
-                <article class="testimonial-card">
-                    <p class="testimonial-quote">“Registrar mis días me ayudó a reconocer qué situaciones elevaban mi ansiedad sin sentirme juzgada.”</p>
-                    <footer class="testimonial-author">
-                        <span class="testimonial-avatar" aria-hidden="true">AR</span>
-                        <span><strong>Ana Ruiz</strong><small>Usuaria del plan Individual</small></span>
-                    </footer>
-                </article>
-                <article class="testimonial-card">
-                    <p class="testimonial-quote">“El panel familiar nos dio una forma respetuosa de acompañarnos sin invadir la privacidad de nadie.”</p>
-                    <footer class="testimonial-author">
-                        <span class="testimonial-avatar" aria-hidden="true">CM</span>
-                        <span><strong>Carlos Méndez</strong><small>Padre y usuario del plan Familiar</small></span>
-                    </footer>
-                </article>
-                <article class="testimonial-card">
-                    <p class="testimonial-quote">“Ver mi progreso de forma visual convirtió pequeños cambios diarios en una motivación constante.”</p>
-                    <footer class="testimonial-author">
-                        <span class="testimonial-avatar" aria-hidden="true">LG</span>
-                        <span><strong>Laura Gómez</strong><small>Estudiante universitaria</small></span>
-                    </footer>
-                </article>
-            </div>
+            @if (isTestimonialsLoading)
+            {
+                <p role="status">Cargando experiencias...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(testimonialsError))
+            {
+                <div role="alert">
+                    <p>@testimonialsError</p>
+                    <button class="button button--outline" type="button" @onclick="LoadTestimonialsAsync">Reintentar</button>
+                </div>
+            }
+            else if (VisibleTestimonials.Count == 0)
+            {
+                <p>Aún no hay testimonios publicados. Vuelve pronto para conocer nuevas experiencias.</p>
+            }
+            else
+            {
+                <div class="testimonials-grid">
+                    @foreach (var testimonial in VisibleTestimonials)
+                    {
+                        <article class="testimonial-card">
+                            <p class="testimonial-quote">“@testimonial.Quote”</p>
+                            <footer class="testimonial-author">
+                                <span class="testimonial-avatar" aria-hidden="true">@GetInitials(testimonial.Name!)</span>
+                                <span><strong>@testimonial.Name</strong><small>@testimonial.Role</small></span>
+                            </footer>
+                        </article>
+                    }
+                </div>
+            }
         </div>
     </section>
 
@@ -347,47 +332,47 @@
 
                 <header class="modal-header">
                     <span class="modal-plan-badge">Plan @selectedPlan.Name</span>
-                    <h2 id="plan-modal-title">@selectedPlan.Title</h2>
-                    <p>@selectedPlan.Description</p>
+                    <h2 id="plan-modal-title">@selectedPlan.Name</h2>
 
                     <div class="modal-price">
-                        <strong>@GetPrice(selectedPlan.MonthlyPrice)</strong>
+                        <strong>@GetPrice(selectedPlan)</strong>
                         <span>/@BillingPeriod</span>
                     </div>
 
-                    <p class="ideal-for"><strong>Ideal para:</strong> @selectedPlan.IdealFor</p>
+                    @if (!string.IsNullOrWhiteSpace(selectedPlan.IdealFor))
+                    {
+                        <p class="ideal-for"><strong>Ideal para:</strong> @selectedPlan.IdealFor</p>
+                    }
                 </header>
 
-                <div class="modal-highlights" aria-label="Características principales">
-                    @foreach (var feature in selectedPlan.Highlights)
-                    {
-                        <article class="modal-highlight">
-                            <span class="modal-highlight__icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="m7 12 3 3 7-7" />
-                                    <circle cx="12" cy="12" r="9" />
-                                </svg>
-                            </span>
-                            <div>
-                                <h3>@feature.Title</h3>
-                                <p>@feature.Description</p>
-                            </div>
-                        </article>
-                    }
-                </div>
+                @if (selectedPlan.Features.Count > 0)
+                {
+                    <section class="modal-includes" aria-labelledby="modal-includes-title">
+                        <h3 id="modal-includes-title">Todo lo que incluye</h3>
+                        <ul>
+                            @foreach (var item in selectedPlan.Features)
+                            {
+                                <li>@item</li>
+                            }
+                        </ul>
+                    </section>
+                }
 
-                <section class="modal-includes" aria-labelledby="modal-includes-title">
-                    <h3 id="modal-includes-title">Todo lo que incluye</h3>
-                    <ul>
-                        @foreach (var item in selectedPlan.Includes)
-                        {
-                            <li>@item</li>
-                        }
-                    </ul>
-                </section>
+                @if (selectedPlan.Limitations.Count > 0)
+                {
+                    <section class="modal-includes" aria-labelledby="modal-limitations-title">
+                        <h3 id="modal-limitations-title">Limitaciones</h3>
+                        <ul>
+                            @foreach (var limitation in selectedPlan.Limitations)
+                            {
+                                <li>@limitation</li>
+                            }
+                        </ul>
+                    </section>
+                }
 
                 <footer class="modal-actions">
-                    <a class="modal-primary-button" href="@($"/register?plan={selectedPlan.Id}")">Elegir @selectedPlan.Name</a>
+                    <a class="modal-primary-button" href="@GetRegistrationUrl(selectedPlan.Id)">Elegir @selectedPlan.Name</a>
                     <button class="modal-secondary-button" type="button" @onclick="ClosePlanDetails">Volver</button>
                 </footer>
             </section>
@@ -397,116 +382,34 @@
 
 @code {
     private bool isAnnual;
-    private PlanDetails? selectedPlan;
+    private readonly CancellationTokenSource cancellationTokenSource = new();
+    private PlanDto? selectedPlan;
+    private IReadOnlyList<PlanDto> plans = [];
+    private IReadOnlyList<FaqDto> faqs = [];
+    private IReadOnlyList<TestimonialDto> testimonials = [];
+    private bool isPlansLoading = true;
+    private bool isFaqLoading = true;
+    private bool isTestimonialsLoading = true;
+    private string? plansError;
+    private string? faqError;
+    private string? testimonialsError;
 
-    private static readonly PlanDetails FreePlan = new(
-        "free",
-        "Gratuito",
-        0m,
-        "Da el primer paso hacia un mayor bienestar",
-        "Conoce las funciones esenciales de AnxietyWatch y empieza a registrar cómo te sientes.",
-        "personas que desean comenzar con un seguimiento sencillo y sin compromiso.",
-        [
-            new("Registro esencial", "Captura tus niveles de ansiedad de forma rápida."),
-            new("Resumen semanal", "Observa una vista básica de tu evolución."),
-            new("Respiración guiada", "Accede a ejercicios breves para momentos difíciles."),
-            new("Privacidad", "Tus datos permanecen protegidos y bajo tu control.")
-        ],
-        [
-            "Hasta 5 registros cada mes",
-            "Resumen semanal básico",
-            "Ejercicios de respiración",
-            "Acceso desde cualquier dispositivo",
-            "Historial de los últimos 7 días",
-            "Soporte de la comunidad"
-        ]);
-
-    private static readonly PlanDetails IndividualPlan = new(
-        "individual",
-        "Individual",
-        4.99m,
-        "Comprende tus patrones y avanza a tu ritmo",
-        "Obtén seguimiento ilimitado, análisis inteligente y recomendaciones adaptadas a tu bienestar.",
-        "personas que quieren profundizar en sus hábitos y recibir orientación personalizada.",
-        [
-            new("Registros ilimitados", "Documenta cada momento sin límites mensuales."),
-            new("Análisis con IA", "Detecta patrones y posibles factores desencadenantes."),
-            new("Recomendaciones", "Recibe sugerencias ajustadas a tu progreso."),
-            new("Informes claros", "Consulta tendencias fáciles de comprender.")
-        ],
-        [
-            "Registros diarios ilimitados",
-            "Análisis de patrones con IA",
-            "Recomendaciones personalizadas",
-            "Historial completo",
-            "Biblioteca de ejercicios",
-            "Informes mensuales descargables",
-            "Recordatorios configurables",
-            "Soporte por correo electrónico"
-        ]);
-
-    private static readonly PlanDetails FamilyPlan = new(
-        "family",
-        "Familiar",
-        8.99m,
-        "Cuida el bienestar de quienes más quieres",
-        "Crea un espacio privado para acompañar a tu familia y comprender juntos sus tendencias de bienestar.",
-        "familias que buscan prevención, acompañamiento y una visión compartida con privacidad individual.",
-        [
-            new("Hasta 5 miembros", "Cada persona conserva su perfil y privacidad."),
-            new("Panel familiar", "Consulta tendencias generales desde un solo lugar."),
-            new("Alertas inteligentes", "Identifica cambios importantes de forma temprana."),
-            new("Perfiles privados", "Cada miembro controla qué información comparte.")
-        ],
-        [
-            "Todo lo incluido en Individual",
-            "Hasta 5 perfiles familiares",
-            "Panel de bienestar familiar",
-            "Alertas y tendencias compartidas",
-            "Privacidad configurable por miembro",
-            "Retos y ejercicios familiares",
-            "Informes familiares mensuales",
-            "Soporte prioritario"
-        ]);
-
-    private static readonly PlanDetails ProfessionalPlan = new(
-        "professional",
-        "Profesional",
-        19.99m,
-        "Convierte la información en mejores decisiones",
-        "Accede a herramientas avanzadas, reportes detallados y una visión profesional del progreso.",
-        "profesionales y equipos que necesitan análisis profundos, seguimiento y reportes estructurados.",
-        [
-            new("Panel avanzado", "Organiza indicadores clave en una vista profesional."),
-            new("Reportes detallados", "Exporta información clara para el seguimiento."),
-            new("Análisis ampliado", "Explora tendencias y periodos personalizados."),
-            new("Soporte prioritario", "Obtén atención preferente cuando la necesites.")
-        ],
-        [
-            "Todo lo incluido en Familiar",
-            "Panel profesional avanzado",
-            "Periodos de análisis personalizados",
-            "Reportes detallados exportables",
-            "Gestión avanzada de información",
-            "Métricas y tendencias ampliadas",
-            "Acceso anticipado a funciones",
-            "Soporte prioritario especializado"
-        ]);
+    private IReadOnlyList<TestimonialDto> VisibleTestimonials => testimonials
+        .Where(item => !string.IsNullOrWhiteSpace(item.Name) && !string.IsNullOrWhiteSpace(item.Quote))
+        .ToArray();
 
     private string BillingPeriod => isAnnual ? "año" : "mes";
 
-    private string GetPrice(decimal monthlyPrice)
-    {
-        if (monthlyPrice == 0)
-        {
-            return "$0";
-        }
+    private string GetRegistrationUrl(string planId) =>
+        $"/register?plan={Uri.EscapeDataString(planId)}&cycle={(isAnnual ? "yearly" : "monthly")}";
 
-        var price = isAnnual ? monthlyPrice * 10 : monthlyPrice;
-        return $"${price.ToString("0.00", CultureInfo.InvariantCulture)}";
-    }
+    protected override async Task OnInitializedAsync() =>
+        await Task.WhenAll(LoadPlansAsync(), LoadFaqAsync(), LoadTestimonialsAsync());
 
-    private void OpenPlanDetails(PlanDetails plan)
+    private string GetPrice(PlanDto plan) =>
+        $"${(isAnnual ? plan.PriceYearly : plan.PriceMonthly).ToString("0.00", CultureInfo.InvariantCulture)}";
+
+    private void OpenPlanDetails(PlanDto plan)
     {
         selectedPlan = plan;
     }
@@ -516,15 +419,92 @@
         selectedPlan = null;
     }
 
-    private sealed record PlanFeature(string Title, string Description);
+    private async Task LoadPlansAsync()
+    {
+        isPlansLoading = true;
+        plansError = null;
+        selectedPlan = null;
+        try
+        {
+            plans = await PlanService.GetPlansAsync(cancellationTokenSource.Token);
+        }
+        catch (ApiException exception)
+        {
+            plans = [];
+            plansError = ApiErrorMessages.For(exception, "No pudimos cargar los planes.");
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (Exception)
+        {
+            plans = [];
+            plansError = "No pudimos cargar los planes. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isPlansLoading = false;
+        }
+    }
 
-    private sealed record PlanDetails(
-        string Id,
-        string Name,
-        decimal MonthlyPrice,
-        string Title,
-        string Description,
-        string IdealFor,
-        IReadOnlyList<PlanFeature> Highlights,
-        IReadOnlyList<string> Includes);
+    private async Task LoadFaqAsync()
+    {
+        isFaqLoading = true;
+        faqError = null;
+        try
+        {
+            faqs = await ContentService.GetFaqAsync(cancellationTokenSource.Token);
+        }
+        catch (ApiException exception)
+        {
+            faqs = [];
+            faqError = ApiErrorMessages.For(exception, "No pudimos cargar las preguntas frecuentes.");
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (Exception)
+        {
+            faqs = [];
+            faqError = "No pudimos cargar las preguntas frecuentes. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isFaqLoading = false;
+        }
+    }
+
+    private async Task LoadTestimonialsAsync()
+    {
+        isTestimonialsLoading = true;
+        testimonialsError = null;
+        try
+        {
+            testimonials = await ContentService.GetTestimonialsAsync(cancellationTokenSource.Token);
+        }
+        catch (ApiException exception)
+        {
+            testimonials = [];
+            testimonialsError = ApiErrorMessages.For(exception, "No pudimos cargar los testimonios.");
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (Exception)
+        {
+            testimonials = [];
+            testimonialsError = "No pudimos cargar los testimonios. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isTestimonialsLoading = false;
+        }
+    }
+
+    private static string GetInitials(string name) => string.Concat(name
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    public void Dispose() => cancellationTokenSource.Cancel();
 }

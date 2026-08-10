@@ -1,310 +1,476 @@
 @page "/dashboard/profile"
 @using System.ComponentModel.DataAnnotations
+@using AnxietyWatch.Web.Client.Models.Api
 @layout DashboardLayout
-@rendermode InteractiveWebAssembly
+@rendermode ClientRenderModes.WebAssembly
+@inject IProfileService ProfileService
+@inject ITokenStore TokenStore
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
 
 <PageTitle>Mi perfil | AnxietyWatch</PageTitle>
 
-<section class="profile-page">
-    <header class="profile-page__header">
-        <div>
-            <span class="profile-page__eyebrow">Cuenta</span>
-            <h1>Mi perfil</h1>
-            <p>Administra tus datos personales y la seguridad de tu cuenta.</p>
-        </div>
-    </header>
+@if (!sessionReady)
+{
+    <div class="profile-loading" role="status">Restaurando tu perfil...</div>
+}
+else
+{
+    <section class="profile-page">
+        <header class="profile-page__header">
+            <div>
+                <span class="profile-page__eyebrow">Cuenta</span>
+                <h1>Mi perfil</h1>
+                <p>Administra tus datos personales, preferencias y la seguridad de tu cuenta.</p>
+            </div>
+        </header>
 
-    <EditForm Model="profileModel" OnValidSubmit="SaveProfile">
-        <DataAnnotationsValidator />
+        <EditForm Model="profileModel" OnValidSubmit="SaveProfileAsync">
+            <DataAnnotationsValidator />
 
-        <section class="profile-card" aria-labelledby="general-information-title">
-            <div class="profile-card__heading profile-card__heading--identity">
-                <div class="profile-avatar-wrap">
-                    <span class="profile-avatar" aria-hidden="true">AR</span>
-                    <button class="avatar-edit-button"
-                            type="button"
-                            aria-label="Cambiar foto de perfil"
-                            title="Cambiar foto de perfil"
-                            @onclick="SimulatePhotoUpload">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4M14.8 5.2l1.4-1.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L18.8 9.2" />
-                        </svg>
+            <section class="profile-card" aria-labelledby="general-information-title">
+                <div class="profile-card__heading profile-card__heading--identity">
+                    <div class="profile-avatar-wrap">
+                        @if (!string.IsNullOrWhiteSpace(profileModel.AvatarUrl))
+                        {
+                            <img class="profile-avatar profile-avatar--image" src="@profileModel.AvatarUrl" alt="Avatar de @profileModel.FullName" />
+                        }
+                        else
+                        {
+                            <span class="profile-avatar" aria-hidden="true">@Initials</span>
+                        }
+                    </div>
+                    <div class="profile-identity">
+                        <h2 id="general-information-title">@profileModel.FullName</h2>
+                        <span>Plan @PlanName</span>
+                    </div>
+                </div>
+
+                <div class="profile-fields">
+                    <div class="form-field">
+                        <label for="profile-name">Nombre completo</label>
+                        <InputText id="profile-name"
+                                   class="form-input"
+                                   autocomplete="name"
+                                   disabled="@profilePending"
+                                   @bind-Value="profileModel.FullName" />
+                        <ValidationMessage For="@(() => profileModel.FullName)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="profile-email">Correo electrónico</label>
+                        <div class="email-field">
+                            <input id="profile-email" class="form-input" type="email" value="@email" readonly />
+                            @if (emailVerified)
+                            {
+                                <span>Verificado</span>
+                            }
+                        </div>
+                        <small>Para cambiar el correo contacta a soporte.</small>
+                    </div>
+
+                    <div class="form-field form-field--wide">
+                        <label for="profile-avatar-url">URL del avatar</label>
+                        <InputText id="profile-avatar-url"
+                                   class="form-input"
+                                   type="url"
+                                   autocomplete="url"
+                                   placeholder="https://ejemplo.com/avatar.jpg"
+                                   disabled="@profilePending"
+                                   @bind-Value="profileModel.AvatarUrl" />
+                        <ValidationMessage For="@(() => profileModel.AvatarUrl)" />
+                        <small>Introduce una URL pública de imagen. No se cargan archivos desde esta página.</small>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(profileNotice))
+                {
+                    <div class="@NoticeClass(profileError)" role="@(profileError ? "alert" : "status")">@profileNotice</div>
+                }
+
+                <div class="profile-card__actions">
+                    <button class="primary-profile-button" type="submit" disabled="@profilePending">
+                        @(profilePending ? "Guardando..." : "Guardar cambios")
                     </button>
                 </div>
-                <div class="profile-identity">
-                    <h2 id="general-information-title">Alex Rivera</h2>
-                    <span>Plan Profesional</span>
-                </div>
-            </div>
-
-            @if (!string.IsNullOrEmpty(photoNotice))
-            {
-                <div class="inline-notice" role="status">@photoNotice</div>
-            }
-
-            <div class="profile-fields">
-                <div class="form-field">
-                    <label for="profile-email">Correo electrónico</label>
-                    <div class="email-field">
-                        <input id="profile-email" class="form-input" type="email" value="alex@demo.com" readonly />
-                        <span>Verificado</span>
-                    </div>
-                    <small>Para cambiar el correo contacta a soporte.</small>
-                </div>
-
-                <div class="form-field">
-                    <label for="profile-phone">Teléfono</label>
-                    <div class="phone-field input-icon-wrapper">
-                        <svg class="profile-phone-icon input-icon-element" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M7 3H5a2 2 0 0 0-2 2c0 8.8 7.2 16 16 16a2 2 0 0 0 2-2v-2l-4-1-1.4 2.1a15 15 0 0 1-9.7-9.7L8 7 7 3Z" />
-                        </svg>
-                        <InputText id="profile-phone"
-                                   class="form-input input-with-padding"
-                                   inputmode="tel"
-                                   autocomplete="tel"
-                                   @bind-Value="profileModel.PhoneNumber"
-                                   @oninput="UpdatePhoneNumber" />
-                        <svg class="field-icon field-icon--end" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4" />
-                        </svg>
-                    </div>
-                    <ValidationMessage For="@(() => profileModel.PhoneNumber)" />
-                    @if (!string.IsNullOrEmpty(phoneValidationMessage))
-                    {
-                        <span class="validation-message" role="alert">@phoneValidationMessage</span>
-                    }
-                </div>
-            </div>
-
-            <div class="profile-metadata">
-                <span>Miembro desde</span>
-                <strong>Mayo 2026</strong>
-            </div>
-
-            @if (!string.IsNullOrEmpty(profileNotice))
-            {
-                <div class="inline-notice" role="status">@profileNotice</div>
-            }
-
-            <div class="profile-card__actions">
-                <button class="primary-profile-button" type="submit" disabled="@(!IsProfileValid())">Guardar cambios</button>
-            </div>
-        </section>
-    </EditForm>
-
-    <EditForm Model="passwordModel" OnValidSubmit="UpdatePassword">
-        <DataAnnotationsValidator />
-
-        <section class="profile-card" aria-labelledby="password-title">
-            <div class="profile-card__heading">
-                <span class="section-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="5" y="10" width="14" height="11" rx="2" />
-                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                    </svg>
-                </span>
-                <div>
-                    <h2 id="password-title">Cambiar contraseña</h2>
-                    <p>Usa una contraseña segura que no utilices en otros servicios.</p>
-                </div>
-            </div>
-
-            <div class="password-fields">
-                <div class="form-field">
-                    <label for="current-password">Contraseña actual</label>
-                    <div class="password-input-wrapper">
-                        <InputText id="current-password"
-                                   class="form-input password-input"
-                                   type="@(showCurrentPassword ? "text" : "password")"
-                                   autocomplete="current-password"
-                                   @bind-Value="passwordModel.CurrentPassword" />
-                        <button class="password-toggle"
-                                type="button"
-                                aria-label="@(showCurrentPassword ? "Ocultar contraseña actual" : "Mostrar contraseña actual")"
-                                aria-pressed="@showCurrentPassword"
-                                @onclick="() => showCurrentPassword = !showCurrentPassword">
-                            @if (showCurrentPassword)
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
-                                </svg>
-                            }
-                            else
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
-                                    <circle cx="12" cy="12" r="2.5" />
-                                </svg>
-                            }
-                        </button>
-                    </div>
-                    <ValidationMessage For="@(() => passwordModel.CurrentPassword)" />
-                </div>
-
-                <div class="form-field">
-                    <label for="new-password">Nueva contraseña</label>
-                    <div class="password-input-wrapper">
-                        <InputText id="new-password"
-                                   class="form-input password-input"
-                                   type="@(showNewPassword ? "text" : "password")"
-                                   autocomplete="new-password"
-                                   @bind-Value="passwordModel.NewPassword" />
-                        <button class="password-toggle"
-                                type="button"
-                                aria-label="@(showNewPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña")"
-                                aria-pressed="@showNewPassword"
-                                @onclick="() => showNewPassword = !showNewPassword">
-                            @if (showNewPassword)
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
-                                </svg>
-                            }
-                            else
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
-                                    <circle cx="12" cy="12" r="2.5" />
-                                </svg>
-                            }
-                        </button>
-                    </div>
-                    <ValidationMessage For="@(() => passwordModel.NewPassword)" />
-                </div>
-
-                <div class="form-field">
-                    <label for="confirm-password">Confirmar nueva contraseña</label>
-                    <div class="password-input-wrapper">
-                        <InputText id="confirm-password"
-                                   class="form-input password-input"
-                                   type="@(showConfirmPassword ? "text" : "password")"
-                                   autocomplete="new-password"
-                                   @bind-Value="passwordModel.ConfirmPassword" />
-                        <button class="password-toggle"
-                                type="button"
-                                aria-label="@(showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña")"
-                                aria-pressed="@showConfirmPassword"
-                                @onclick="() => showConfirmPassword = !showConfirmPassword">
-                            @if (showConfirmPassword)
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6" />
-                                </svg>
-                            }
-                            else
-                            {
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
-                                    <circle cx="12" cy="12" r="2.5" />
-                                </svg>
-                            }
-                        </button>
-                    </div>
-                    <ValidationMessage For="@(() => passwordModel.ConfirmPassword)" />
-                </div>
-            </div>
-
-            @if (!string.IsNullOrEmpty(passwordNotice))
-            {
-                <div class="inline-notice" role="status">@passwordNotice</div>
-            }
-
-            <div class="profile-card__actions">
-                <button class="primary-profile-button" type="submit">Actualizar contraseña</button>
-            </div>
-        </section>
-    </EditForm>
-
-    <section class="profile-card danger-card" aria-labelledby="danger-title">
-        <div>
-            <h2 id="danger-title">Zona de peligro</h2>
-            <p>Estas acciones son irreversibles. Procede con cuidado.</p>
-        </div>
-        <button type="button" @onclick="() => showDeleteConfirmation = true">Cerrar y eliminar cuenta</button>
-    </section>
-
-    @if (showDeleteConfirmation)
-    {
-        <div class="delete-account-overlay" role="presentation" @onclick="() => showDeleteConfirmation = false">
-            <section class="delete-account-modal"
-                     role="dialog"
-                     aria-modal="true"
-                     aria-labelledby="delete-account-title"
-                     @onclick:stopPropagation="true">
-                <span class="delete-account-modal__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 9v2m0 4h.01m-6.94 4h13.88a2 2 0 0 0 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.33 16a2 2 0 0 0 1.73 3Z" />
-                    </svg>
-                </span>
-                <h3 id="delete-account-title">¿Eliminar cuenta definitivamente?</h3>
-                <p>Esta acción es irreversible. Perderás el acceso a la plataforma, se borrará tu historial y se revocarán todos tus tokens de vinculación. ¿Estás absolutamente seguro de continuar?</p>
-                <footer class="delete-account-modal__actions">
-                    <button class="delete-account-button delete-account-button--cancel"
-                            type="button"
-                            @onclick="() => showDeleteConfirmation = false">Cancelar</button>
-                    <button class="delete-account-button delete-account-button--confirm" type="button">Sí, eliminar cuenta</button>
-                </footer>
             </section>
-        </div>
-    }
-</section>
+        </EditForm>
+
+        <EditForm Model="settingsModel" OnValidSubmit="SaveSettingsAsync">
+            <DataAnnotationsValidator />
+
+            <section class="profile-card" aria-labelledby="settings-title">
+                <div class="profile-card__heading">
+                    <span class="section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M6 14v6" />
+                        </svg>
+                    </span>
+                    <div>
+                        <h2 id="settings-title">Preferencias de seguimiento</h2>
+                        <p>Estos valores iniciales no se han recuperado del servidor. Revisa y guarda los valores que quieras aplicar.</p>
+                    </div>
+                </div>
+
+                <div class="settings-fields">
+                    <div class="form-field">
+                        <label for="anxiety-threshold">Umbral de ansiedad (0-100)</label>
+                        <InputNumber id="anxiety-threshold"
+                                     class="form-input"
+                                     min="0"
+                                     max="100"
+                                     disabled="@settingsPending"
+                                     @bind-Value="settingsModel.AnxietyThreshold" />
+                        <ValidationMessage For="@(() => settingsModel.AnxietyThreshold)" />
+                    </div>
+
+                    <label class="setting-toggle" for="push-notifications">
+                        <InputCheckbox id="push-notifications" disabled="@settingsPending" @bind-Value="settingsModel.PushNotifications" />
+                        <span>
+                            <strong>Notificaciones push</strong>
+                            <small>Permite avisos relacionados con tu seguimiento.</small>
+                        </span>
+                    </label>
+
+                    <label class="setting-toggle" for="private-mode">
+                        <InputCheckbox id="private-mode" disabled="@settingsPending" @bind-Value="settingsModel.PrivateMode" />
+                        <span>
+                            <strong>Modo privado</strong>
+                            <small>Aplica el modo privado a la información de seguimiento.</small>
+                        </span>
+                    </label>
+                </div>
+
+                @if (!string.IsNullOrEmpty(settingsNotice))
+                {
+                    <div class="@NoticeClass(settingsError)" role="@(settingsError ? "alert" : "status")">@settingsNotice</div>
+                }
+
+                <div class="profile-card__actions">
+                    <button class="primary-profile-button" type="submit" disabled="@settingsPending">
+                        @(settingsPending ? "Guardando..." : "Guardar preferencias")
+                    </button>
+                </div>
+            </section>
+        </EditForm>
+
+        <EditForm Model="passwordModel" OnValidSubmit="UpdatePasswordAsync">
+            <DataAnnotationsValidator />
+
+            <section class="profile-card" aria-labelledby="password-title">
+                <div class="profile-card__heading">
+                    <span class="section-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="5" y="10" width="14" height="11" rx="2" />
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                        </svg>
+                    </span>
+                    <div>
+                        <h2 id="password-title">Cambiar contraseña</h2>
+                        <p>Usa una contraseña segura de entre 8 y 30 caracteres que no utilices en otros servicios.</p>
+                    </div>
+                </div>
+
+                <div class="password-fields">
+                    <div class="form-field">
+                        <label for="current-password">Contraseña actual</label>
+                        <div class="password-input-wrapper">
+                            <InputText id="current-password" class="form-input password-input"
+                                       type="@(showCurrentPassword ? "text" : "password")"
+                                       autocomplete="current-password" disabled="@passwordPending"
+                                       @bind-Value="passwordModel.CurrentPassword" />
+                            <button class="password-toggle" type="button" disabled="@passwordPending"
+                                    aria-label="@(showCurrentPassword ? "Ocultar contraseña actual" : "Mostrar contraseña actual")"
+                                    aria-pressed="@showCurrentPassword" @onclick="() => showCurrentPassword = !showCurrentPassword">
+                                @PasswordVisibilityIcon(showCurrentPassword)
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => passwordModel.CurrentPassword)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="new-password">Nueva contraseña</label>
+                        <div class="password-input-wrapper">
+                            <InputText id="new-password" class="form-input password-input"
+                                       type="@(showNewPassword ? "text" : "password")"
+                                       autocomplete="new-password" disabled="@passwordPending"
+                                       @bind-Value="passwordModel.NewPassword" />
+                            <button class="password-toggle" type="button" disabled="@passwordPending"
+                                    aria-label="@(showNewPassword ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña")"
+                                    aria-pressed="@showNewPassword" @onclick="() => showNewPassword = !showNewPassword">
+                                @PasswordVisibilityIcon(showNewPassword)
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => passwordModel.NewPassword)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label for="confirm-password">Confirmar nueva contraseña</label>
+                        <div class="password-input-wrapper">
+                            <InputText id="confirm-password" class="form-input password-input"
+                                       type="@(showConfirmPassword ? "text" : "password")"
+                                       autocomplete="new-password" disabled="@passwordPending"
+                                       @bind-Value="passwordModel.ConfirmPassword" />
+                            <button class="password-toggle" type="button" disabled="@passwordPending"
+                                    aria-label="@(showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña")"
+                                    aria-pressed="@showConfirmPassword" @onclick="() => showConfirmPassword = !showConfirmPassword">
+                                @PasswordVisibilityIcon(showConfirmPassword)
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => passwordModel.ConfirmPassword)" />
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(passwordNotice))
+                {
+                    <div class="@NoticeClass(passwordError)" role="@(passwordError ? "alert" : "status")">@passwordNotice</div>
+                }
+
+                <div class="profile-card__actions">
+                    <button class="primary-profile-button" type="submit" disabled="@passwordPending">
+                        @(passwordPending ? "Actualizando..." : "Actualizar contraseña")
+                    </button>
+                </div>
+            </section>
+        </EditForm>
+
+        <section class="profile-card danger-card" aria-labelledby="danger-title">
+            <div>
+                <h2 id="danger-title">Eliminación de cuenta</h2>
+                <p>La eliminación de cuenta no está disponible desde esta página. Solicítala directamente al equipo de soporte.</p>
+            </div>
+            <button type="button" disabled aria-disabled="true">Solicitar vía soporte</button>
+        </section>
+    </section>
+}
 
 @code {
-    private readonly ProfileModel profileModel = new();
-    private readonly PasswordModel passwordModel = new();
-
+    private ProfileModel profileModel = new();
+    private PasswordModel passwordModel = new();
+    private readonly SettingsModel settingsModel = new();
+    private bool sessionReady;
+    private bool profilePending;
+    private bool settingsPending;
+    private bool passwordPending;
     private bool showCurrentPassword;
     private bool showNewPassword;
     private bool showConfirmPassword;
-    private bool showDeleteConfirmation = false;
-    private string? phoneValidationMessage;
-    private string? photoNotice;
+    private bool emailVerified;
+    private string email = string.Empty;
+    private string planId = string.Empty;
     private string? profileNotice;
+    private string? settingsNotice;
     private string? passwordNotice;
+    private bool profileError;
+    private bool settingsError;
+    private bool passwordError;
 
-    private void UpdatePhoneNumber(ChangeEventArgs args)
+    private string Initials => GetInitials(profileModel.FullName);
+    private string PlanName => planId.Trim().ToLowerInvariant() switch
     {
-        profileModel.PhoneNumber = args.Value?.ToString() ?? string.Empty;
-        phoneValidationMessage = GetPhoneValidationMessage();
-        profileNotice = null;
-    }
+        "free" => "Gratuito",
+        "individual" => "Individual",
+        "family" => "Familiar",
+        "professional" => "Profesional",
+        _ => string.IsNullOrWhiteSpace(planId) ? "sin asignar" : planId
+    };
 
-    private string? GetPhoneValidationMessage()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var context = new ValidationContext(profileModel)
+        if (!firstRender)
         {
-            MemberName = nameof(ProfileModel.PhoneNumber)
+            return;
+        }
+
+        await TokenStore.RestoreFromStorageAsync();
+        var user = TokenStore.GetUser();
+        if (user is null || string.IsNullOrWhiteSpace(TokenStore.GetAccessToken()) || TokenStore.GetExpiresAt() <= DateTimeOffset.UtcNow)
+        {
+            await AuthService.LogoutAsync();
+            Navigation.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        profileModel = new ProfileModel { FullName = user.FullName, AvatarUrl = user.AvatarUrl };
+        email = user.Email;
+        emailVerified = user.EmailVerified;
+        planId = user.PlanId;
+        sessionReady = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        profilePending = true;
+        profileNotice = null;
+
+        try
+        {
+            var response = await ProfileService.UpdateProfileAsync(new UpdateProfileRequest
+            {
+                FullName = profileModel.FullName.Trim(),
+                AvatarUrl = string.IsNullOrWhiteSpace(profileModel.AvatarUrl) ? null : profileModel.AvatarUrl.Trim()
+            });
+            profileModel.FullName = response.FullName;
+            profileModel.AvatarUrl = response.AvatarUrl;
+            await UpdateStoredUserAsync(response.FullName, response.AvatarUrl);
+            profileError = false;
+            profileNotice = "Tus cambios se guardaron correctamente.";
+        }
+        catch (ApiException exception)
+        {
+            if (await HandleUnauthorizedAsync(exception)) return;
+            profileError = true;
+            profileNotice = ApiErrorMessages.For(exception, "No pudimos guardar tu perfil.");
+        }
+        catch (Exception)
+        {
+            profileError = true;
+            profileNotice = "No pudimos guardar tu perfil. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            profilePending = false;
+        }
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        settingsPending = true;
+        settingsNotice = null;
+
+        try
+        {
+            var response = await ProfileService.UpdateSettingsAsync(new UpdateSettingsRequest
+            {
+                AnxietyThreshold = settingsModel.AnxietyThreshold,
+                PushNotifications = settingsModel.PushNotifications,
+                PrivateMode = settingsModel.PrivateMode
+            });
+            settingsModel.AnxietyThreshold = response.AnxietyThreshold;
+            settingsModel.PushNotifications = response.PushNotifications;
+            settingsModel.PrivateMode = response.PrivateMode;
+            settingsError = false;
+            settingsNotice = "Tus preferencias se guardaron correctamente.";
+        }
+        catch (ApiException exception)
+        {
+            if (await HandleUnauthorizedAsync(exception)) return;
+            settingsError = true;
+            settingsNotice = ApiErrorMessages.For(exception, "No pudimos guardar tus preferencias.");
+        }
+        catch (Exception)
+        {
+            settingsError = true;
+            settingsNotice = "No pudimos guardar tus preferencias. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            settingsPending = false;
+        }
+    }
+
+    private async Task UpdatePasswordAsync()
+    {
+        passwordPending = true;
+        passwordNotice = null;
+
+        try
+        {
+            await ProfileService.ChangePasswordAsync(new ChangePasswordRequest
+            {
+                CurrentPassword = passwordModel.CurrentPassword,
+                NewPassword = passwordModel.NewPassword
+            });
+            passwordModel = new PasswordModel();
+            showCurrentPassword = showNewPassword = showConfirmPassword = false;
+            passwordError = false;
+            passwordNotice = "Tu contraseña se actualizó correctamente.";
+        }
+        catch (ApiException exception)
+        {
+            if (await HandleUnauthorizedAsync(exception)) return;
+            passwordError = true;
+            passwordNotice = ApiErrorMessages.For(exception, "No pudimos actualizar tu contraseña.");
+        }
+        catch (Exception)
+        {
+            passwordError = true;
+            passwordNotice = "No pudimos actualizar tu contraseña. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            passwordPending = false;
+        }
+    }
+
+    private async Task<bool> HandleUnauthorizedAsync(ApiException exception)
+    {
+        if (exception.StatusCode != 401)
+        {
+            return false;
+        }
+
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+        return true;
+    }
+
+    private async Task UpdateStoredUserAsync(string fullName, string? avatarUrl)
+    {
+        var user = TokenStore.GetUser();
+        var token = TokenStore.GetAccessToken();
+        var expiresAt = TokenStore.GetExpiresAt();
+        if (user is null || token is null || expiresAt is null)
+        {
+            return;
+        }
+
+        user.FullName = fullName;
+        user.AvatarUrl = avatarUrl;
+        await TokenStore.StoreAsync(new AuthResponse { Token = token, ExpiresAt = expiresAt.Value, User = user });
+    }
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => string.Concat(parts[0][0], parts[^1][0]).ToUpperInvariant()
         };
-        var results = new List<ValidationResult>();
-
-        Validator.TryValidateProperty(profileModel.PhoneNumber, context, results);
-        return results.FirstOrDefault()?.ErrorMessage;
     }
 
-    private bool IsProfileValid() => GetPhoneValidationMessage() is null;
+    private static string NoticeClass(bool isError) => isError ? "inline-notice inline-notice--error" : "inline-notice";
 
-    private async Task SimulatePhotoUpload()
+    private static RenderFragment PasswordVisibilityIcon(bool visible) => builder =>
     {
-        photoNotice = "Carga de foto simulada correctamente.";
-        await Task.Delay(2500);
-        photoNotice = null;
-    }
-
-    private void SaveProfile()
-    {
-        profileNotice = "Tus cambios se guardaron correctamente.";
-    }
-
-    private void UpdatePassword()
-    {
-        passwordNotice = "Tu contraseña se actualizó correctamente.";
-    }
+        if (visible)
+        {
+            builder.AddMarkupContent(0, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 3l18 18M10.6 10.7A2 2 0 0 0 13.3 13.4M9.9 5.2A10.8 10.8 0 0 1 12 5c5.5 0 9 7 9 7a16.5 16.5 0 0 1-2.2 3.1M6.2 6.2C4.2 7.6 3 12 3 12s3.5 7 9 7a9.7 9.7 0 0 0 3.3-.6\" /></svg>");
+        }
+        else
+        {
+            builder.AddMarkupContent(0, "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z\" /><circle cx=\"12\" cy=\"12\" r=\"2.5\" /></svg>");
+        }
+    };
 
     public sealed class ProfileModel
     {
-        [Required(ErrorMessage = "El teléfono es obligatorio.")]
-        [RegularExpression(@"^\+?[0-9][0-9\s\-()]{6,19}$", ErrorMessage = "Introduce un número de teléfono válido.")]
-        public string PhoneNumber { get; set; } = "+34 600 123 456";
+        [Required(ErrorMessage = "El nombre completo es obligatorio.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Url(ErrorMessage = "Introduce una URL válida para el avatar.")]
+        public string? AvatarUrl { get; set; }
+    }
+
+    public sealed class SettingsModel
+    {
+        [Range(0, 100, ErrorMessage = "El umbral debe estar entre 0 y 100.")]
+        public int AnxietyThreshold { get; set; } = 70;
+        public bool PushNotifications { get; set; } = true;
+        public bool PrivateMode { get; set; }
     }
 
     public sealed class PasswordModel
@@ -313,7 +479,7 @@
         public string CurrentPassword { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "La nueva contraseña es obligatoria.")]
-        [MinLength(8, ErrorMessage = "La nueva contraseña debe tener al menos 8 caracteres.")]
+        [StringLength(30, MinimumLength = 8, ErrorMessage = "La nueva contraseña debe tener entre 8 y 30 caracteres.")]
         public string NewPassword { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Confirma la nueva contraseña.")]

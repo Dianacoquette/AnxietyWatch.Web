@@ -1,9 +1,13 @@
 @page "/login"
 @page "/register"
 @using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using AnxietyWatch.Web.Client.Models.Api
 @inject IAuthService AuthService
+@inject IPlanService PlanService
 @inject NavigationManager Navigation
-@rendermode InteractiveWebAssembly
+@rendermode ClientRenderModes.WebAssembly
+@implements IDisposable
 
 <PageTitle>@(isLoginView ? "Iniciar sesión" : "Crear cuenta") | AnxietyWatch</PageTitle>
 
@@ -29,11 +33,6 @@
         @if (!string.IsNullOrWhiteSpace(authError))
         {
             <div class="auth-alert auth-alert--error" role="alert">@authError</div>
-        }
-
-        @if (isLoginView && showSuccessMessage)
-        {
-            <div class="auth-alert auth-alert--success" role="status">¡Cuenta verificada! Ahora puedes iniciar sesión.</div>
         }
 
         @if (isLoginView)
@@ -123,9 +122,7 @@
             <ol class="register-steps" aria-label="Progreso del registro">
                 <li class="@GetStepClass(1)"><span>1</span><strong>Datos</strong></li>
                 <li class="register-steps__line @(registerStep >= 2 ? "is-active" : null)" aria-hidden="true"></li>
-                <li class="@GetStepClass(2)"><span>2</span><strong>Plan y pago</strong></li>
-                <li class="register-steps__line @(registerStep >= 3 ? "is-active" : null)" aria-hidden="true"></li>
-                <li class="@GetStepClass(3)"><span>3</span><strong>Verificación</strong></li>
+                <li class="@GetStepClass(2)"><span>2</span><strong>Plan</strong></li>
             </ol>
 
             @if (registerStep == 1)
@@ -212,7 +209,7 @@
                     </EditForm>
                 </div>
             }
-            else if (registerStep == 2)
+            else
             {
                 <div class="auth-view auth-view--plans">
                     <header class="auth-heading">
@@ -220,139 +217,70 @@
                         <p>Selecciona la opción que mejor se adapta a tus necesidades.</p>
                     </header>
 
-                    <EditForm Model="paymentModel" OnSubmit="CompletePlanStep" class="auth-form">
-                        <DataAnnotationsValidator />
-
-                        <div class="auth-plan-grid" role="radiogroup" aria-label="Planes disponibles">
-                            @foreach (var plan in Plans)
+                    <EditForm Model="registerModel" OnValidSubmit="CompleteRegistrationAsync" class="auth-form">
+                        @if (isPlansLoading)
+                        {
+                            <div class="auth-alert" role="status">Cargando planes...</div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(plansError))
+                        {
+                            <div class="auth-alert auth-alert--error" role="alert">
+                                @plansError
+                                <button type="button" @onclick="LoadPlansAsync">Reintentar</button>
+                            </div>
+                        }
+                        else if (plans.Count == 0)
+                        {
+                            <div class="auth-alert" role="status">No hay planes disponibles para completar el registro.</div>
+                        }
+                        else
+                        {
+                            <div class="auth-plan-grid" role="radiogroup" aria-label="Planes disponibles">
+                            @foreach (var plan in plans)
                             {
                                 <button class="@GetPlanCardClass(plan)"
                                         type="button"
                                         role="radio"
-                                        aria-checked="@(selectedPlan == plan.Name)"
-                                        @onclick="() => SelectPlan(plan.Name)">
+                                        aria-checked="@(selectedPlanId == plan.Id)"
+                                        @onclick="() => SelectPlan(plan.Id)">
                                     <span class="plan-radio" aria-hidden="true"></span>
                                     <strong>@plan.Name</strong>
-                                    <span class="plan-price">@plan.Price</span>
-                                    <small>@plan.Description</small>
+                                    <span class="plan-price">@FormatMonthlyPrice(plan)</span>
+                                    <small>@plan.IdealFor</small>
                                 </button>
                             }
-                        </div>
+                            </div>
 
-                        <section class="plan-feature-box @GetSelectedPlanToneClass()" aria-labelledby="selected-plan-title">
-                            <header>
-                                <div>
-                                    <span>Plan seleccionado</span>
-                                    <h2 id="selected-plan-title">@SelectedPlanOption.Name</h2>
-                                </div>
-                                <strong>@SelectedPlanOption.Price</strong>
-                            </header>
-                            <ul>
-                                @foreach (var feature in SelectedPlanOption.Features)
-                                {
-                                    <li><span aria-hidden="true">✓</span>@feature</li>
-                                }
-                            </ul>
-                        </section>
-
-                        @if (selectedPlan != "Gratuito")
-                        {
-                            <section class="registration-payment" aria-labelledby="registration-payment-title">
-                                <h2 id="registration-payment-title">Datos de pago</h2>
-
-                                <div class="auth-field">
-                                    <label for="payment-card-number">Número de tarjeta</label>
-                                    <InputText id="payment-card-number"
-                                               class="form-input"
-                                               inputmode="numeric"
-                                               maxlength="16"
-                                               autocomplete="cc-number"
-                                               placeholder="1234567890123456"
-                                               @bind-Value="paymentModel.CardNumber" />
-                                    <ValidationMessage For="@(() => paymentModel.CardNumber)" />
-                                </div>
-
-                                <div class="payment-row">
-                                    <div class="auth-field">
-                                        <label for="payment-expiry">MM/AA</label>
-                                        <InputText id="payment-expiry"
-                                                   class="form-input"
-                                                   inputmode="numeric"
-                                                   maxlength="5"
-                                                   autocomplete="cc-exp"
-                                                   placeholder="MM/AA"
-                                                   @bind-Value="paymentModel.Expiry" />
-                                        <ValidationMessage For="@(() => paymentModel.Expiry)" />
+                            @if (SelectedPlan is { } selectedPlan)
+                            {
+                            <section class="plan-feature-box @GetSelectedPlanToneClass()" aria-labelledby="selected-plan-title">
+                                <header>
+                                    <div>
+                                        <span>Plan seleccionado</span>
+                                        <h2 id="selected-plan-title">@selectedPlan.Name</h2>
                                     </div>
-                                    <div class="auth-field">
-                                        <label for="payment-cvv">CVV</label>
-                                        <InputText id="payment-cvv"
-                                                   class="form-input"
-                                                   type="password"
-                                                   inputmode="numeric"
-                                                   maxlength="4"
-                                                   autocomplete="cc-csc"
-                                                   placeholder="123"
-                                                   @bind-Value="paymentModel.Cvv" />
-                                        <ValidationMessage For="@(() => paymentModel.Cvv)" />
-                                    </div>
-                                </div>
+                                    <strong>@FormatMonthlyPrice(selectedPlan)</strong>
+                                </header>
+                                <ul>
+                                    @foreach (var feature in selectedPlan.Features)
+                                    {
+                                        <li><span aria-hidden="true">✓</span>@feature</li>
+                                    }
+                                </ul>
                             </section>
+
+                            }
                         }
 
                         <div class="register-actions">
                             <button class="auth-back-button" type="button" @onclick="BackToData">← Atrás</button>
-                            <button class="plan-primary @GetSelectedPlanToneClass()" type="submit">@GetPlanActionText()</button>
+                            <button class="plan-primary @GetSelectedPlanToneClass()"
+                                    type="submit"
+                                    disabled="@(SelectedPlan is null || isPlansLoading || isSubmitting)">
+                                @(isSubmitting ? "Creando cuenta..." : GetPlanActionText())
+                            </button>
                         </div>
                     </EditForm>
-                </div>
-            }
-            else
-            {
-                <div class="auth-view auth-view--verification">
-                    <header class="auth-heading">
-                        <span class="verification-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24">
-                                <rect x="3" y="5" width="18" height="14" rx="2" />
-                                <path d="m4 7 8 6 8-6" />
-                            </svg>
-                        </span>
-                        <h1>Verifica tu correo</h1>
-                        <p>Hemos enviado un código de 6 dígitos a <strong>@registerModel.Email</strong>.</p>
-                    </header>
-
-                    <EditForm Model="verificationModel" OnValidSubmit="VerifyAndFinish" class="auth-form">
-                        <DataAnnotationsValidator />
-
-                        <div class="auth-field verification-field">
-                            <label for="verification-code">Código de verificación</label>
-                            <InputText id="verification-code"
-                                       class="form-input verification-input"
-                                       inputmode="numeric"
-                                       autocomplete="one-time-code"
-                                       maxlength="6"
-                                       placeholder="000000"
-                                       @bind-Value="verificationModel.Code" />
-                            <ValidationMessage For="@(() => verificationModel.Code)" />
-                        </div>
-
-                        <button class="auth-primary auth-primary--sage"
-                                type="submit"
-                                disabled="@isSubmitting"
-                                aria-busy="@isSubmitting">
-                            @(isSubmitting ? "Finalizando..." : "Verificar y finalizar")
-                        </button>
-                    </EditForm>
-
-                    <div class="resend-code">
-                        <span>¿No recibiste el código?</span>
-                        <button type="button" @onclick="ResendVerificationCode">Reenviar</button>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(verificationNotice))
-                    {
-                        <div class="auth-alert auth-alert--success" role="status">@verificationNotice</div>
-                    }
                 </div>
             }
         }
@@ -363,51 +291,39 @@
     [SupplyParameterFromQuery(Name = "plan")]
     public string? RequestedPlan { get; set; }
 
+    [SupplyParameterFromQuery(Name = "cycle")]
+    public string? RequestedBillingCycle { get; set; }
+
     private readonly LoginModel loginModel = new();
     private readonly RegisterModel registerModel = new();
-    private readonly PaymentModel paymentModel = new();
-    private readonly VerificationModel verificationModel = new();
+    private readonly CancellationTokenSource cancellationTokenSource = new();
 
     private bool isLoginView = true;
     private int registerStep = 1;
-    private string selectedPlan = "Gratuito";
+    private string? selectedPlanId;
+    private string billingCycle = "monthly";
     private bool showLoginPassword;
     private bool showRegisterPassword;
     private bool isSubmitting;
-    private bool showSuccessMessage;
     private string? authError;
-    private string? verificationNotice;
+    private IReadOnlyList<PlanDto> plans = [];
+    private bool isPlansLoading = true;
+    private string? plansError;
 
-    private static readonly IReadOnlyList<PlanOption> Plans =
-    [
-        new("Gratuito", "$0/mes", "Lo esencial para comenzar", "free",
-        ["Registro básico de bienestar", "Resumen semanal", "Acceso a la comunidad"]),
-        new("Individual", "$4.99/mes", "Seguimiento personal completo", "individual",
-        ["Registros ilimitados", "Análisis de patrones", "Recomendaciones personalizadas"]),
-        new("Familiar", "$8.99/mes", "Bienestar para quienes más quieres", "family",
-        ["Hasta 5 miembros", "Tokens de vinculación", "Panel y alertas familiares"]),
-        new("Profesional", "$19.99/mes", "Herramientas clínicas avanzadas", "professional",
-        ["Hasta 20 pacientes", "Reportes clínicos", "Panel de gestión profesional"])
-    ];
-
-    private PlanOption SelectedPlanOption => Plans.First(plan => plan.Name == selectedPlan);
+    private PlanDto? SelectedPlan => plans.FirstOrDefault(plan => plan.Id == selectedPlanId);
 
     protected override void OnParametersSet()
     {
         var path = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
         isLoginView = !path.Equals("/register", StringComparison.OrdinalIgnoreCase);
+        billingCycle = RequestedBillingCycle?.Equals("yearly", StringComparison.OrdinalIgnoreCase) == true
+            ? "yearly"
+            : "monthly";
 
-        if (!isLoginView && !string.IsNullOrWhiteSpace(RequestedPlan))
-        {
-            selectedPlan = RequestedPlan.Trim().ToLowerInvariant() switch
-            {
-                "individual" => "Individual",
-                "family" or "familiar" => "Familiar",
-                "professional" or "profesional" => "Profesional",
-                _ => "Gratuito"
-            };
-        }
+        ApplyRequestedPlan();
     }
+
+    protected override Task OnInitializedAsync() => LoadPlansAsync();
 
     private void ShowLogin()
     {
@@ -421,7 +337,6 @@
         isLoginView = false;
         registerStep = 1;
         authError = null;
-        showSuccessMessage = false;
         Navigation.NavigateTo("/register", replace: true);
     }
 
@@ -436,18 +351,9 @@
         registerStep = 1;
     }
 
-    private void CompletePlanStep(EditContext paymentContext)
+    private void SelectPlan(string planId)
     {
-        if (selectedPlan == "Gratuito" || paymentContext.Validate())
-        {
-            authError = null;
-            registerStep = 3;
-        }
-    }
-
-    private void SelectPlan(string planName)
-    {
-        selectedPlan = planName;
+        selectedPlanId = planId;
     }
 
     private string GetAuthCardClass() => !isLoginView && registerStep == 2
@@ -458,14 +364,24 @@
         ? "register-step is-active"
         : "register-step";
 
-    private string GetPlanCardClass(PlanOption plan) =>
-        $"auth-plan-card plan-tone--{plan.Tone}{(selectedPlan == plan.Name ? " is-selected" : string.Empty)}";
+    private string GetPlanCardClass(PlanDto plan) =>
+        $"auth-plan-card plan-tone--{plan.Id}{(selectedPlanId == plan.Id ? " is-selected" : string.Empty)}";
 
-    private string GetSelectedPlanToneClass() => $"plan-tone--{SelectedPlanOption.Tone}";
+    private string GetSelectedPlanToneClass() => SelectedPlan is null ? string.Empty : $"plan-tone--{SelectedPlan.Id}";
 
-    private string GetPlanActionText() => selectedPlan == "Gratuito"
-        ? "Crear cuenta gratis"
-        : $"Suscribirse - {SelectedPlanOption.Price}";
+    private string GetPlanActionText() => SelectedPlan switch
+    {
+        null => "Selecciona un plan",
+        { PriceMonthly: 0 } => "Crear cuenta gratis",
+        _ => $"Suscribirse - {FormatMonthlyPrice(SelectedPlan)}"
+    };
+
+    private string FormatMonthlyPrice(PlanDto plan)
+    {
+        var price = billingCycle == "yearly" ? plan.PriceYearly : plan.PriceMonthly;
+        var period = billingCycle == "yearly" ? "año" : "mes";
+        return $"${price.ToString("0.00", CultureInfo.InvariantCulture)}/{period}";
+    }
 
     private async Task HandleLogin()
     {
@@ -485,6 +401,10 @@
         {
             authError = "Correo o contraseña incorrectos.";
         }
+        catch (ApiException exception)
+        {
+            authError = ApiErrorMessages.For(exception, "No pudimos iniciar sesión.");
+        }
         catch (Exception)
         {
             authError = "No pudimos iniciar sesión. Inténtalo nuevamente.";
@@ -495,8 +415,14 @@
         }
     }
 
-    private async Task VerifyAndFinish()
+    private async Task CompleteRegistrationAsync()
     {
+        if (SelectedPlan is null)
+        {
+            authError = "Selecciona un plan para completar el registro.";
+            return;
+        }
+
         isSubmitting = true;
         authError = null;
 
@@ -507,28 +433,23 @@
                 FullName = registerModel.FullName,
                 Email = registerModel.Email,
                 Password = registerModel.Password,
-                PlanId = SelectedPlanOption.Tone
+                PlanId = SelectedPlan!.Id,
+                BillingCycle = billingCycle
             });
-            isLoginView = true;
-            registerStep = 1;
-            showSuccessMessage = true;
-            Navigation.NavigateTo("/login", replace: true);
+            Navigation.NavigateTo("/dashboard");
         }
-        catch (Exception ex)
+        catch (ApiException exception)
         {
-            authError = ex.Message;
+            authError = ApiErrorMessages.For(exception, "No pudimos crear tu cuenta.");
+        }
+        catch (Exception)
+        {
+            authError = "No pudimos crear tu cuenta. Inténtalo nuevamente.";
         }
         finally
         {
             isSubmitting = false;
         }
-    }
-
-    private async Task ResendVerificationCode()
-    {
-        verificationNotice = $"Enviamos un nuevo código a {registerModel.Email}.";
-        await Task.Delay(2500);
-        verificationNotice = null;
     }
 
     public sealed class LoginModel
@@ -544,7 +465,7 @@
     public sealed class RegisterModel
     {
         [Required(ErrorMessage = "El nombre es obligatorio.")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "El nombre debe tener entre 3 y 50 caracteres.")]
+        [StringLength(60, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 60 caracteres.")]
         public string FullName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "El correo es obligatorio.")]
@@ -556,33 +477,49 @@
         public string Password { get; set; } = string.Empty;
     }
 
-    public sealed class PaymentModel
+    private async Task LoadPlansAsync()
     {
-        [Required(ErrorMessage = "El número de tarjeta es obligatorio.")]
-        [RegularExpression(@"^\d{16}$", ErrorMessage = "Introduce los 16 dígitos de la tarjeta.")]
-        public string CardNumber { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "La fecha de vencimiento es obligatoria.")]
-        [RegularExpression(@"^(0[1-9]|1[0-2])/\d{2}$", ErrorMessage = "Usa el formato MM/AA.")]
-        public string Expiry { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El CVV es obligatorio.")]
-        [RegularExpression(@"^\d{3,4}$", ErrorMessage = "El CVV debe tener 3 o 4 dígitos.")]
-        public string Cvv { get; set; } = string.Empty;
+        isPlansLoading = true;
+        plansError = null;
+        try
+        {
+            plans = await PlanService.GetPlansAsync(cancellationTokenSource.Token);
+            ApplyRequestedPlan();
+            selectedPlanId ??= plans.FirstOrDefault(plan => plan.PriceMonthly == 0)?.Id ?? plans.FirstOrDefault()?.Id;
+        }
+        catch (ApiException exception)
+        {
+            plans = [];
+            selectedPlanId = null;
+            plansError = ApiErrorMessages.For(exception, "No pudimos cargar los planes.");
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+        }
+        catch (Exception)
+        {
+            plans = [];
+            selectedPlanId = null;
+            plansError = "No pudimos cargar los planes. Inténtalo nuevamente.";
+        }
+        finally
+        {
+            isPlansLoading = false;
+        }
     }
 
-    public sealed class VerificationModel
+    private void ApplyRequestedPlan()
     {
-        [Required(ErrorMessage = "Introduce el código de verificación.")]
-        [StringLength(6, MinimumLength = 6, ErrorMessage = "El código debe tener 6 dígitos.")]
-        [RegularExpression(@"^\d{6}$", ErrorMessage = "El código debe contener solo números.")]
-        public string Code { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(RequestedPlan) || plans.Count == 0)
+        {
+            return;
+        }
+
+        selectedPlanId = plans.FirstOrDefault(plan =>
+            plan.Id.Equals(RequestedPlan.Trim(), StringComparison.OrdinalIgnoreCase))?.Id
+            ?? plans.FirstOrDefault(plan => plan.PriceMonthly == 0)?.Id
+            ?? plans[0].Id;
     }
 
-    private sealed record PlanOption(
-        string Name,
-        string Price,
-        string Description,
-        string Tone,
-        IReadOnlyList<string> Features);
+    public void Dispose() => cancellationTokenSource.Cancel();
 }
