@@ -399,6 +399,16 @@ code {
     color: #6d7772;
 }
 
+.status-badge--deleted {
+    background: #f1f2f1;
+    color: #6d7772;
+}
+
+.status-badge--expired {
+    background: #fff0e5;
+    color: #9a5a2c;
+}
+
 .row-actions {
     display: flex;
     justify-content: flex-end;

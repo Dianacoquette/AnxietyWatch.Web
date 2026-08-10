@@ -5,8 +5,7 @@
 @using AnxietyWatch.Web.Client.Models.Api
 @inject IDashboardService DashboardService
 @inject IEpisodeService EpisodeService
-@inject ITokenStore TokenStore
-@inject IAuthService AuthService
+@inject IAuthSessionManager SessionManager
 @inject NavigationManager Navigation
 
 <PageTitle>Resumen | AnxietyWatch</PageTitle>
@@ -187,8 +186,8 @@
         _ => "Cargando..."
     };
     private string WeeklyLimit => summary?.WeeklyRecords.Limit is int limit
-        ? $"{summary.WeeklyRecords.Used} de {limit} disponibles"
-        : "Sin límite";
+        ? $"{summary.WeeklyRecords.Used} de {limit} utilizados"
+        : $"{summary?.WeeklyRecords.Used ?? 0} utilizados · Sin límite";
     private string NormalizedTrend => summary?.AnxietyLevel.Trend.Trim().ToLowerInvariant() ?? "stable";
     private string TrendIcon => NormalizedTrend switch { "up" => "↑", "down" => "↓", _ => "−" };
     private string TrendCss => NormalizedTrend switch { "up" => "up", "down" => "down", _ => "stable" };
@@ -201,37 +200,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadSessionAsync();
+        LoadSession();
         if (!isRedirecting)
         {
             await Task.WhenAll(LoadSummaryAsync(), LoadEpisodesAsync());
         }
     }
 
-    private async Task LoadSessionAsync()
+    private void LoadSession()
     {
-        await TokenStore.RestoreFromStorageAsync();
-        var user = TokenStore.GetUser();
+        var user = SessionManager.CurrentUser;
         if (user is null)
         {
-            try
-            {
-                user = (await AuthService.GetSessionAsync())?.User;
-            }
-            catch (ApiException exception) when (exception.StatusCode == 401)
-            {
-                await RedirectToLoginAsync();
-                return;
-            }
-            catch (ApiException)
-            {
-                // Summary and episode calls below expose service availability errors.
-            }
-        }
-
-        if (user is null)
-        {
-            await RedirectToLoginAsync();
+            isRedirecting = true;
+            Navigation.NavigateTo("/login", replace: true);
             return;
         }
 
@@ -296,7 +278,7 @@
     {
         if (isRedirecting) return;
         isRedirecting = true;
-        await AuthService.LogoutAsync();
+        await SessionManager.ClearAsync();
         Navigation.NavigateTo("/login", replace: true);
     }
 

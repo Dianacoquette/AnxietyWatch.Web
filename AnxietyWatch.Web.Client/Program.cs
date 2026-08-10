@@ -27,6 +27,8 @@ builder.Services.AddScoped(sp => new HttpClient(
     });
 
 // Estado de autenticación para que la UI reaccione a login/logout.
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<IAuthSessionManager, AuthSessionManager>();
 builder.Services.AddScoped<ApiAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthenticationStateProvider>());
 
@@ -39,4 +41,6 @@ builder.Services.AddScoped<IEpisodeService, EpisodeService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+await host.Services.GetRequiredService<IAuthSessionManager>().InitializeAsync();
+await host.RunAsync();

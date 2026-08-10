@@ -35,6 +35,11 @@
             <div class="auth-alert auth-alert--error" role="alert">@authError</div>
         }
 
+        @if (isLoginView && PasswordReset)
+        {
+            <div class="auth-alert auth-alert--success" role="status">Contraseña actualizada. Ya puedes iniciar sesión.</div>
+        }
+
         @if (isLoginView)
         {
             <div class="auth-view auth-view--login">
@@ -242,11 +247,13 @@
                                         type="button"
                                         role="radio"
                                         aria-checked="@(selectedPlanId == plan.Id)"
+                                        aria-disabled="@(!IsFreePlan(plan))"
+                                        disabled="@(!IsFreePlan(plan))"
                                         @onclick="() => SelectPlan(plan.Id)">
                                     <span class="plan-radio" aria-hidden="true"></span>
                                     <strong>@plan.Name</strong>
                                     <span class="plan-price">@FormatMonthlyPrice(plan)</span>
-                                    <small>@plan.IdealFor</small>
+                                    <small>@(IsFreePlan(plan) ? plan.IdealFor : "Próximamente · Pago no disponible")</small>
                                 </button>
                             }
                             </div>
@@ -276,7 +283,7 @@
                             <button class="auth-back-button" type="button" @onclick="BackToData">← Atrás</button>
                             <button class="plan-primary @GetSelectedPlanToneClass()"
                                     type="submit"
-                                    disabled="@(SelectedPlan is null || isPlansLoading || isSubmitting)">
+                                    disabled="@(SelectedPlan is null || !IsFreePlan(SelectedPlan) || isPlansLoading || isSubmitting)">
                                 @(isSubmitting ? "Creando cuenta..." : GetPlanActionText())
                             </button>
                         </div>
@@ -293,6 +300,9 @@
 
     [SupplyParameterFromQuery(Name = "cycle")]
     public string? RequestedBillingCycle { get; set; }
+
+    [SupplyParameterFromQuery(Name = "passwordReset")]
+    public bool PasswordReset { get; set; }
 
     private readonly LoginModel loginModel = new();
     private readonly RegisterModel registerModel = new();
@@ -365,7 +375,7 @@
         : "register-step";
 
     private string GetPlanCardClass(PlanDto plan) =>
-        $"auth-plan-card plan-tone--{plan.Id}{(selectedPlanId == plan.Id ? " is-selected" : string.Empty)}";
+        $"auth-plan-card plan-tone--{plan.Id}{(selectedPlanId == plan.Id ? " is-selected" : string.Empty)}{(!IsFreePlan(plan) ? " is-upcoming" : string.Empty)}";
 
     private string GetSelectedPlanToneClass() => SelectedPlan is null ? string.Empty : $"plan-tone--{SelectedPlan.Id}";
 
@@ -373,7 +383,7 @@
     {
         null => "Selecciona un plan",
         { PriceMonthly: 0 } => "Crear cuenta gratis",
-        _ => $"Suscribirse - {FormatMonthlyPrice(SelectedPlan)}"
+        _ => "Pago no disponible"
     };
 
     private string FormatMonthlyPrice(PlanDto plan)
@@ -420,6 +430,12 @@
         if (SelectedPlan is null)
         {
             authError = "Selecciona un plan para completar el registro.";
+            return;
+        }
+
+        if (!IsFreePlan(SelectedPlan))
+        {
+            authError = "Los planes de pago estarán disponibles próximamente. Por ahora solo puedes registrarte con el plan Gratuito.";
             return;
         }
 
@@ -485,7 +501,7 @@
         {
             plans = await PlanService.GetPlansAsync(cancellationTokenSource.Token);
             ApplyRequestedPlan();
-            selectedPlanId ??= plans.FirstOrDefault(plan => plan.PriceMonthly == 0)?.Id ?? plans.FirstOrDefault()?.Id;
+            selectedPlanId ??= plans.FirstOrDefault(IsFreePlan)?.Id;
         }
         catch (ApiException exception)
         {
@@ -516,10 +532,12 @@
         }
 
         selectedPlanId = plans.FirstOrDefault(plan =>
-            plan.Id.Equals(RequestedPlan.Trim(), StringComparison.OrdinalIgnoreCase))?.Id
-            ?? plans.FirstOrDefault(plan => plan.PriceMonthly == 0)?.Id
-            ?? plans[0].Id;
+            IsFreePlan(plan) && plan.Id.Equals(RequestedPlan.Trim(), StringComparison.OrdinalIgnoreCase))?.Id
+            ?? plans.FirstOrDefault(IsFreePlan)?.Id;
     }
+
+    private static bool IsFreePlan(PlanDto plan) =>
+        plan.PriceMonthly == 0 && plan.PriceYearly == 0 && plan.Id.Equals("free", StringComparison.OrdinalIgnoreCase);
 
     public void Dispose() => cancellationTokenSource.Cancel();
 }

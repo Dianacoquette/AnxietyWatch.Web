@@ -197,6 +197,36 @@
     transform: translateY(-50%);
 }
 
+.email-field > .email-pending {
+    background: #fff4dc;
+    color: #8a641e;
+}
+
+.verification-resend-button {
+    margin-top: 0.65rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d8d0ec;
+    border-radius: 8px;
+    background: #fff;
+    color: #66558f;
+    cursor: pointer;
+    font-size: 0.68rem;
+    font-weight: 850;
+}
+
+.verification-resend-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.form-field .verification-notice {
+    color: #4b7965;
+}
+
+.form-field .verification-notice--error {
+    color: #a34646;
+}
+
 .phone-field .form-input {
     padding-right: 2.7rem;
 }

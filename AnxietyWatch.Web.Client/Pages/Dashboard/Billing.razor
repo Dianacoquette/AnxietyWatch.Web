@@ -4,8 +4,7 @@
 @layout DashboardLayout
 @rendermode ClientRenderModes.WebAssembly
 @inject IPlanService PlanService
-@inject ITokenStore TokenStore
-@inject IAuthService AuthService
+@inject IAuthSessionManager SessionManager
 @inject NavigationManager Navigation
 
 <PageTitle>Facturación | AnxietyWatch</PageTitle>
@@ -88,11 +87,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await TokenStore.RestoreFromStorageAsync();
-        var user = TokenStore.GetUser();
+        var user = SessionManager.CurrentUser;
         if (user is null)
         {
-            await AuthService.LogoutAsync();
+            await SessionManager.ClearAsync();
             Navigation.NavigateTo("/login", replace: true);
             return;
         }
@@ -113,7 +111,7 @@
         }
         catch (ApiException exception) when (exception.StatusCode == 401)
         {
-            await AuthService.LogoutAsync();
+            await SessionManager.ClearAsync();
             Navigation.NavigateTo("/login", replace: true);
         }
         catch (ApiException exception)

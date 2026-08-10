@@ -4,9 +4,10 @@
 @layout DashboardLayout
 @rendermode ClientRenderModes.WebAssembly
 @inject IProfileService ProfileService
-@inject ITokenStore TokenStore
 @inject IAuthService AuthService
+@inject IAuthSessionManager SessionManager
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Mi perfil | AnxietyWatch</PageTitle>
 
@@ -65,8 +66,30 @@ else
                             {
                                 <span>Verificado</span>
                             }
+                            else
+                            {
+                                <span class="email-pending">Pendiente</span>
+                            }
                         </div>
                         <small>Para cambiar el correo contacta a soporte.</small>
+                        @if (!emailVerified)
+                        {
+                            <button class="verification-resend-button"
+                                    type="button"
+                                    disabled="@(verificationLoading || verificationPending || verificationCooldownSeconds > 0)"
+                                    @onclick="ResendVerificationAsync">
+                                @(verificationPending
+                                    ? "Enviando..."
+                                    : verificationCooldownSeconds > 0
+                                        ? $"Reintentar en {verificationCooldownSeconds} s"
+                                        : "Reenviar verificación")
+                            </button>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(verificationNotice))
+                        {
+                            <small class="@(verificationError ? "verification-notice verification-notice--error" : "verification-notice")"
+                                   role="@(verificationError ? "alert" : "status")">@verificationNotice</small>
+                        }
                     </div>
 
                     <div class="form-field form-field--wide">
@@ -108,7 +131,7 @@ else
                     </span>
                     <div>
                         <h2 id="settings-title">Preferencias de seguimiento</h2>
-                        <p>Estos valores iniciales no se han recuperado del servidor. Revisa y guarda los valores que quieras aplicar.</p>
+                        <p>La API aún no ofrece GET /api/settings. Estos valores son una propuesta local: revísalos y guárdalos solo si quieres aplicarlos.</p>
                     </div>
                 </div>
 
@@ -264,6 +287,12 @@ else
     private bool profileError;
     private bool settingsError;
     private bool passwordError;
+    private bool verificationLoading;
+    private bool verificationPending;
+    private bool verificationError;
+    private int verificationCooldownSeconds;
+    private string? verificationNotice;
+    private CancellationTokenSource verificationCooldownCancellation = new();
 
     private string Initials => GetInitials(profileModel.FullName);
     private string PlanName => planId.Trim().ToLowerInvariant() switch
@@ -275,18 +304,11 @@ else
         _ => string.IsNullOrWhiteSpace(planId) ? "sin asignar" : planId
     };
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender)
+        var user = SessionManager.CurrentUser;
+        if (user is null)
         {
-            return;
-        }
-
-        await TokenStore.RestoreFromStorageAsync();
-        var user = TokenStore.GetUser();
-        if (user is null || string.IsNullOrWhiteSpace(TokenStore.GetAccessToken()) || TokenStore.GetExpiresAt() <= DateTimeOffset.UtcNow)
-        {
-            await AuthService.LogoutAsync();
             Navigation.NavigateTo("/login", replace: true);
             return;
         }
@@ -296,7 +318,7 @@ else
         emailVerified = user.EmailVerified;
         planId = user.PlanId;
         sessionReady = true;
-        StateHasChanged();
+        await LoadVerificationStatusAsync();
     }
 
     private async Task SaveProfileAsync()
@@ -389,7 +411,11 @@ else
         }
         catch (ApiException exception)
         {
-            if (await HandleUnauthorizedAsync(exception)) return;
+            if (exception.StatusCode == 401)
+            {
+                await HandleChangePasswordUnauthorizedAsync();
+                return;
+            }
             passwordError = true;
             passwordNotice = ApiErrorMessages.For(exception, "No pudimos actualizar tu contraseña.");
         }
@@ -411,24 +437,135 @@ else
             return false;
         }
 
-        await AuthService.LogoutAsync();
+        await SessionManager.ClearAsync();
         Navigation.NavigateTo("/login", replace: true);
         return true;
     }
 
+    private async Task HandleChangePasswordUnauthorizedAsync()
+    {
+        try
+        {
+            if (await AuthService.GetSessionAsync() is null)
+            {
+                Navigation.NavigateTo("/login", replace: true);
+                return;
+            }
+
+            passwordError = true;
+            passwordNotice = "La contraseña actual es incorrecta.";
+        }
+        catch (ApiException exception)
+        {
+            passwordError = true;
+            passwordNotice = ApiErrorMessages.For(exception, "No pudimos validar tu sesión.");
+        }
+        catch (HttpRequestException)
+        {
+            passwordError = true;
+            passwordNotice = "No pudimos validar tu sesión. Inténtalo nuevamente.";
+        }
+    }
+
     private async Task UpdateStoredUserAsync(string fullName, string? avatarUrl)
     {
-        var user = TokenStore.GetUser();
-        var token = TokenStore.GetAccessToken();
-        var expiresAt = TokenStore.GetExpiresAt();
-        if (user is null || token is null || expiresAt is null)
+        var user = SessionManager.CurrentUser;
+        if (user is null)
         {
             return;
         }
 
         user.FullName = fullName;
         user.AvatarUrl = avatarUrl;
-        await TokenStore.StoreAsync(new AuthResponse { Token = token, ExpiresAt = expiresAt.Value, User = user });
+        await SessionManager.UpdateUserAsync(user);
+    }
+
+    private async Task LoadVerificationStatusAsync()
+    {
+        verificationLoading = true;
+        verificationNotice = null;
+        try
+        {
+            var response = await AuthService.GetEmailVerificationStatusAsync();
+            emailVerified = response.EmailVerified;
+            await UpdateStoredVerificationAsync(response.EmailVerified);
+        }
+        catch (ApiException exception)
+        {
+            if (await HandleUnauthorizedAsync(exception)) return;
+            verificationError = true;
+            verificationNotice = ApiErrorMessages.For(exception, "No pudimos consultar la verificación del correo.");
+        }
+        finally
+        {
+            verificationLoading = false;
+        }
+    }
+
+    private async Task ResendVerificationAsync()
+    {
+        if (verificationPending || verificationCooldownSeconds > 0) return;
+
+        verificationPending = true;
+        verificationNotice = null;
+        try
+        {
+            var response = await AuthService.ResendEmailVerificationAsync();
+            await LoadVerificationStatusAsync();
+            verificationError = false;
+            verificationNotice = string.IsNullOrWhiteSpace(response.Message)
+                ? "Verificación reenviada."
+                : response.Message;
+            StartVerificationCooldown(60);
+        }
+        catch (ApiException exception)
+        {
+            if (await HandleUnauthorizedAsync(exception)) return;
+            verificationError = true;
+            verificationNotice = ApiErrorMessages.For(exception, "No pudimos reenviar la verificación.");
+            if (exception.StatusCode == 429)
+            {
+                StartVerificationCooldown(exception.RetryAfterSeconds ?? 60);
+            }
+        }
+        finally
+        {
+            verificationPending = false;
+        }
+    }
+
+    private async Task UpdateStoredVerificationAsync(bool verified)
+    {
+        var user = SessionManager.CurrentUser;
+        if (user is null || user.EmailVerified == verified) return;
+
+        user.EmailVerified = verified;
+        await SessionManager.UpdateUserAsync(user);
+    }
+
+    private void StartVerificationCooldown(int seconds)
+    {
+        verificationCooldownCancellation.Cancel();
+        verificationCooldownCancellation.Dispose();
+        verificationCooldownCancellation = new CancellationTokenSource();
+        verificationCooldownSeconds = Math.Max(1, seconds);
+        _ = RunVerificationCooldownAsync(verificationCooldownCancellation.Token);
+    }
+
+    private async Task RunVerificationCooldownAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (verificationCooldownSeconds > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                verificationCooldownSeconds--;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private static string GetInitials(string name)
@@ -485,5 +622,11 @@ else
         [Required(ErrorMessage = "Confirma la nueva contraseña.")]
         [Compare(nameof(NewPassword), ErrorMessage = "Las contraseñas no coinciden.")]
         public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public void Dispose()
+    {
+        verificationCooldownCancellation.Cancel();
+        verificationCooldownCancellation.Dispose();
     }
 }
