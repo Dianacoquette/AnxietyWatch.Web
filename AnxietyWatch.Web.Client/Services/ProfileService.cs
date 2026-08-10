@@ -6,6 +6,8 @@ namespace AnxietyWatch.Web.Client.Services;
 
 public interface IProfileService
 {
+    Task<ProfileResponse> GetProfileAsync(CancellationToken cancellationToken = default);
+    Task<SettingsResponse> GetSettingsAsync(CancellationToken cancellationToken = default);
     Task<ProfileResponse> UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default);
     Task<SettingsResponse> UpdateSettingsAsync(UpdateSettingsRequest request, CancellationToken cancellationToken = default);
     Task<MessageResponse> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default);
@@ -13,6 +15,18 @@ public interface IProfileService
 
 public sealed class ProfileService(HttpClient http, JsonSerializerOptions jsonOptions) : IProfileService
 {
+    public async Task<ProfileResponse> GetProfileAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await http.GetAsync("api/profile", cancellationToken);
+        return await response.ReadApiAsync<ProfileResponse>(jsonOptions, cancellationToken);
+    }
+
+    public async Task<SettingsResponse> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await http.GetAsync("api/settings", cancellationToken);
+        return await response.ReadApiAsync<SettingsResponse>(jsonOptions, cancellationToken);
+    }
+
     public async Task<ProfileResponse> UpdateProfileAsync(
         UpdateProfileRequest request,
         CancellationToken cancellationToken = default)

@@ -10,6 +10,6 @@ public interface IAuthService
     Task<AuthResponse?> GetSessionAsync();
     Task<AuthMessageResponse> ForgotPasswordAsync(ForgotPasswordRequest request);
     Task<AuthMessageResponse> ResetPasswordAsync(ResetPasswordRequest request);
-    Task<EmailVerificationStatusResponse> GetEmailVerificationStatusAsync();
-    Task<AuthMessageResponse> ResendEmailVerificationAsync();
+    Task<EmailVerificationStatusResponse> GetEmailVerificationStatusAsync(CancellationToken cancellationToken = default);
+    Task<AuthMessageResponse> ResendEmailVerificationAsync(CancellationToken cancellationToken = default);
 }

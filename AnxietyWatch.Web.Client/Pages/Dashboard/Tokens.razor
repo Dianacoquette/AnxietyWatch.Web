@@ -58,7 +58,7 @@
             </section>
 
             <aside class="token-alert" role="note" aria-label="Información importante sobre tokens">
-                <span aria-hidden="true">!</span><p>@pendingTokenCount pendientes · @acceptedTokenCount aceptados · @deletedTokenCount eliminados. La cuota cuenta todos los tokens no eliminados.</p>
+                <span aria-hidden="true">!</span><p>@pendingTokenCount pendientes · @expiredTokenCount expirados · @acceptedTokenCount aceptados. La cuota cuenta todos los tokens que el backend no haya eliminado.</p>
             </aside>
 
             <section class="tokens-table-card" aria-labelledby="tokens-table-title">
@@ -93,11 +93,11 @@
                                         <td>@GetRoleLabel(token.Role)</td>
                                         <td><code>@token.Code</code></td>
                                         <td>@token.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                                        <td><span class="status-badge @GetStatusClass(token.Status)">@GetStatusLabel(token.Status)</span></td>
+                                        <td><span class="status-badge @GetStatusClass(token)">@GetStatusLabel(token)</span></td>
                                         <td>
                                             <div class="row-actions">
                                                 <button type="button" aria-label="Copiar token @token.Code" title="Copiar" @onclick="() => CopyTokenAsync(token.Code)" disabled="@mutationInProgress"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg></button>
-                                                <button type="button" aria-label="Compartir token @token.Code" title="Compartir" @onclick="() => OpenShareModal(token)" disabled="@(mutationInProgress || IsDeleted(token))"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="18" cy="19" r="2" /><path d="m8 11 8-5m-8 7 8 5" /></svg></button>
+                                                <button type="button" aria-label="Compartir token @token.Code" title="@(IsExpired(token) ? "El token expiró" : "Compartir")" @onclick="() => OpenShareModal(token)" disabled="@(mutationInProgress || IsDeleted(token) || IsExpired(token))"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="18" cy="19" r="2" /><path d="m8 11 8-5m-8 7 8 5" /></svg></button>
                                                 <button type="button" aria-label="Eliminar token @token.Code" title="@(CanDelete(token) ? "Eliminar" : "Solo los tokens pendientes pueden eliminarse")" @onclick="() => DeleteTokenAsync(token)" disabled="@(mutationInProgress || !CanDelete(token))"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v5m4-5v5M8 7l1-3h6l1 3m2 0-1 13H7L6 7" /></svg></button>
                                             </div>
                                         </td>
@@ -217,9 +217,9 @@
     private string? shareMessage;
 
     private int quotaTokenCount => allTokens.Count(token => !IsDeleted(token));
-    private int pendingTokenCount => allTokens.Count(token => HasStatus(token, "pending"));
+    private int pendingTokenCount => allTokens.Count(token => HasStatus(token, "pending") && !IsVisuallyExpired(token));
+    private int expiredTokenCount => allTokens.Count(IsExpired);
     private int acceptedTokenCount => allTokens.Count(token => HasStatus(token, "accepted"));
-    private int deletedTokenCount => allTokens.Count(IsDeleted);
     private int usagePercent => planLimit == 0 ? 0 : Math.Min(100, (int)Math.Round(quotaTokenCount * 100d / planLimit));
     private bool isLimitReached => quotaTokenCount >= planLimit;
     private bool mutationInProgress => isCreating || isDeleting || isSharing || isExporting;
@@ -392,7 +392,8 @@
         return message;
     }
 
-    private void RefreshVisibleTokens() => visibleTokens = allTokens.ToList();
+    private void RefreshVisibleTokens() =>
+        visibleTokens = allTokens.Where(token => !IsDeleted(token)).ToList();
 
     private void OpenTokenModal()
     {
@@ -431,7 +432,15 @@
     private static bool HasStatus(LinkTokenDto token, string status) =>
         string.Equals(token.Status, status, StringComparison.OrdinalIgnoreCase);
     private static bool IsDeleted(LinkTokenDto token) => HasStatus(token, "deleted");
+    private static bool IsVisuallyExpired(LinkTokenDto token) =>
+        HasStatus(token, "pending") && token.ExpiresAt <= DateTimeOffset.UtcNow;
+    private static bool IsExpired(LinkTokenDto token) =>
+        HasStatus(token, "expired") || IsVisuallyExpired(token);
     private static bool CanDelete(LinkTokenDto token) => HasStatus(token, "pending");
-    private static string GetStatusLabel(string status) => status.ToLowerInvariant() switch { "accepted" => "Aceptado", "pending" => "Pendiente", "deleted" => "Eliminado", "expired" => "Expirado", _ => status };
-    private static string GetStatusClass(string status) => status.ToLowerInvariant() switch { "accepted" => "status-badge--used", "pending" => "status-badge--pending", "deleted" => "status-badge--deleted", "expired" => "status-badge--expired", _ => "status-badge--available" };
+    private static string GetStatusLabel(LinkTokenDto token) => IsVisuallyExpired(token)
+        ? "Expirado"
+        : token.Status.ToLowerInvariant() switch { "accepted" => "Aceptado", "pending" => "Pendiente", "expired" => "Expirado", _ => token.Status };
+    private static string GetStatusClass(LinkTokenDto token) => IsVisuallyExpired(token)
+        ? "status-badge--expired"
+        : token.Status.ToLowerInvariant() switch { "accepted" => "status-badge--used", "pending" => "status-badge--pending", "expired" => "status-badge--expired", _ => "status-badge--available" };
 }

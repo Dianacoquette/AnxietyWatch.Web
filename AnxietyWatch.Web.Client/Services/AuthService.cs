@@ -60,15 +60,15 @@ public class AuthService(
         return await response.ReadApiAsync<AuthMessageResponse>(jsonOptions);
     }
 
-    public async Task<EmailVerificationStatusResponse> GetEmailVerificationStatusAsync()
+    public async Task<EmailVerificationStatusResponse> GetEmailVerificationStatusAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await http.GetAsync("api/auth/verify-email/status");
-        return await response.ReadApiAsync<EmailVerificationStatusResponse>(jsonOptions);
+        using var response = await http.GetAsync("api/auth/verify-email/status", cancellationToken);
+        return await response.ReadApiAsync<EmailVerificationStatusResponse>(jsonOptions, cancellationToken);
     }
 
-    public async Task<AuthMessageResponse> ResendEmailVerificationAsync()
+    public async Task<AuthMessageResponse> ResendEmailVerificationAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await http.PostAsync("api/auth/verify-email/resend", null);
-        return await response.ReadApiAsync<AuthMessageResponse>(jsonOptions);
+        using var response = await http.PostAsync("api/auth/verify-email/resend", null, cancellationToken);
+        return await response.ReadApiAsync<AuthMessageResponse>(jsonOptions, cancellationToken);
     }
 }

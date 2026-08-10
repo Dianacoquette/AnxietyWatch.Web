@@ -19,6 +19,39 @@
     font-size: 0.82rem;
 }
 
+.profile-load-state {
+    display: grid;
+    min-height: 150px;
+    place-items: center;
+    padding: 1.5rem;
+    border: 1px solid var(--profile-border);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--profile-muted);
+    text-align: center;
+}
+
+.profile-load-state--error {
+    border-color: #efcaca;
+    background: #fff8f8;
+    color: #984545;
+}
+
+.profile-load-state p {
+    margin: 0;
+}
+
+.profile-load-state button {
+    margin-top: 0.85rem;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #d8b7b7;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    cursor: pointer;
+    font-weight: 800;
+}
+
 .profile-page__header {
     margin-bottom: 1.5rem;
 }

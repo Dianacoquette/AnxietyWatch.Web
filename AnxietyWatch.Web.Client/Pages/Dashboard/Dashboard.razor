@@ -186,8 +186,8 @@
         _ => "Cargando..."
     };
     private string WeeklyLimit => summary?.WeeklyRecords.Limit is int limit
-        ? $"{summary.WeeklyRecords.Used} de {limit} utilizados"
-        : $"{summary?.WeeklyRecords.Used ?? 0} utilizados · Sin límite";
+        ? $"Límite semanal: {limit}"
+        : "Sin límite semanal";
     private string NormalizedTrend => summary?.AnxietyLevel.Trend.Trim().ToLowerInvariant() ?? "stable";
     private string TrendIcon => NormalizedTrend switch { "up" => "↑", "down" => "↓", _ => "−" };
     private string TrendCss => NormalizedTrend switch { "up" => "up", "down" => "down", _ => "stable" };
