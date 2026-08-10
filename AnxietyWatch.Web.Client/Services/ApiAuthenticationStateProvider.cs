@@ -16,6 +16,7 @@ public class ApiAuthenticationStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        await _tokenStore.RestoreFromStorageAsync();
         var user = _tokenStore.GetUser();
         if (user is null)
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));

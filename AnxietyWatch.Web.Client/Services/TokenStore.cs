@@ -11,6 +11,7 @@ namespace AnxietyWatch.Web.Client.Services;
 public interface ITokenStore
 {
     Task StoreAsync(AuthResponse session);
+    Task RestoreFromStorageAsync();
     Task ClearAsync();
     string? GetAccessToken();
     UserDto? GetUser();
@@ -77,9 +78,9 @@ public class TokenStore : ITokenStore
     public DateTimeOffset? GetExpiresAt() => _expiresAt;
 
     /// <summary>Lee y cachea la sesión guardada en <c>localStorage</c> (restauración tras recarga).</summary>
-    internal async Task RestoreFromStorageAsync()
+    public async Task RestoreFromStorageAsync()
     {
-        if (_token is not null) return;
+        if (_token is not null && _expiresAt > DateTimeOffset.UtcNow && _user is not null) return;
 
         try
         {
@@ -87,18 +88,27 @@ public class TokenStore : ITokenStore
             var expiresRaw = await _js.InvokeAsync<string?>("localStorage.getItem", ExpiresKey);
             var userRaw = await _js.InvokeAsync<string?>("localStorage.getItem", UserKey);
 
-            if (string.IsNullOrWhiteSpace(token)) return;
+            if (string.IsNullOrWhiteSpace(token) ||
+                !DateTimeOffset.TryParse(expiresRaw, out var expiresAt) ||
+                expiresAt <= DateTimeOffset.UtcNow ||
+                string.IsNullOrWhiteSpace(userRaw))
+            {
+                await ClearAsync();
+                return;
+            }
+
+            var user = JsonSerializer.Deserialize<UserDto>(userRaw);
+            if (user is null)
+            {
+                await ClearAsync();
+                return;
+            }
 
             _token = token;
-            _expiresAt = DateTimeOffset.TryParse(expiresRaw, out var exp) ? exp : null;
-
-            if (!string.IsNullOrWhiteSpace(userRaw))
-            {
-                try { _user = JsonSerializer.Deserialize<UserDto>(userRaw); }
-                catch (JsonException) { _user = null; }
-            }
+            _expiresAt = expiresAt;
+            _user = user;
         }
-        catch
+        catch (Exception exception) when (exception is JSException or JsonException or InvalidOperationException)
         {
             // Sin interop (prerender) no se restaura nada.
         }
