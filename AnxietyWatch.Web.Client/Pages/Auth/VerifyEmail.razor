@@ -1,0 +1,136 @@
+@page "/verify-email"
+@rendermode ClientRenderModes.WebAssembly
+@implements IAsyncDisposable
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+
+<PageTitle>Verificar correo | AnxietyWatch</PageTitle>
+
+<section class="verification-shell" aria-labelledby="verification-title">
+    <div class="verification-card">
+        <div class="verification-mark @StateClass" aria-hidden="true">
+            @if (state == VerificationState.Loading)
+            {
+                <span class="verification-spinner"></span>
+            }
+            else if (state == VerificationState.Success)
+            {
+                <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></svg>
+            }
+            else
+            {
+                <svg viewBox="0 0 24 24"><path d="M12 8v5" /><path d="M12 17h.01" /><path d="M10.3 4.7 3.7 16.1A2 2 0 0 0 5.4 19h13.2a2 2 0 0 0 1.7-2.9L13.7 4.7a2 2 0 0 0-3.4 0Z" /></svg>
+            }
+        </div>
+
+        @if (state == VerificationState.Loading)
+        {
+            <div role="status" aria-live="polite">
+                <p class="verification-kicker">Cuenta segura</p>
+                <h1 id="verification-title">Verificando tu correo</h1>
+                <p class="verification-copy">Estamos confirmando que esta dirección te pertenece. Tomará sólo un momento.</p>
+            </div>
+        }
+        else if (state == VerificationState.Success)
+        {
+            <div role="status" aria-live="polite">
+                <p class="verification-kicker">Verificación completa</p>
+                <h1 id="verification-title">Tu correo está verificado</h1>
+                <p class="verification-copy">La dirección quedó confirmada y tu cuenta de AnxietyWatch está lista.</p>
+                <a class="verification-action" href="/dashboard">Continuar a AnxietyWatch</a>
+            </div>
+        }
+        else if (state == VerificationState.Expired)
+        {
+            <div role="alert">
+                <p class="verification-kicker">Enlace no disponible</p>
+                <h1 id="verification-title">Este enlace ya no es válido</h1>
+                <p class="verification-copy">Expiró, fue reemplazado o ya se utilizó. Inicia sesión y solicita un correo nuevo desde tu perfil.</p>
+                <a class="verification-action" href="/login">Ir a iniciar sesión</a>
+            </div>
+        }
+        else
+        {
+            <div role="alert">
+                <p class="verification-kicker">No pudimos verificar</p>
+                <h1 id="verification-title">Revisa el enlace</h1>
+                <p class="verification-copy">@errorMessage</p>
+                <a class="verification-action" href="/login">Volver al inicio de sesión</a>
+            </div>
+        }
+
+        <p class="verification-help">¿Necesitas ayuda? Puedes solicitar otro enlace desde la sección de seguridad de tu perfil.</p>
+    </div>
+</section>
+
+@code {
+    private readonly CancellationTokenSource cancellation = new();
+    private VerificationState state = VerificationState.Loading;
+    private string errorMessage = "El enlace no contiene un token de verificación válido.";
+
+    private string StateClass => state switch
+    {
+        VerificationState.Success => "is-success",
+        VerificationState.Expired => "is-expired",
+        VerificationState.Error => "is-error",
+        _ => "is-loading"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var token = await JS.InvokeAsync<string?>(
+            "anxietyWatchEmailVerification.takeToken",
+            cancellation.Token);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            state = VerificationState.Error;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            await AuthService.VerifyEmailAsync(
+                new VerifyEmailRequest { Token = token },
+                cancellation.Token);
+            state = VerificationState.Success;
+        }
+        catch (ApiException exception) when (exception.StatusCode == 410)
+        {
+            state = VerificationState.Expired;
+        }
+        catch (ApiException exception)
+        {
+            state = VerificationState.Error;
+            errorMessage = ApiErrorMessages.For(exception, "No pudimos verificar el correo en este momento.");
+        }
+        catch (HttpRequestException)
+        {
+            state = VerificationState.Error;
+            errorMessage = "No pudimos conectar con el servicio. Inténtalo nuevamente desde el enlace del correo.";
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        cancellation.Cancel();
+        cancellation.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    private enum VerificationState
+    {
+        Loading,
+        Success,
+        Expired,
+        Error
+    }
+}
