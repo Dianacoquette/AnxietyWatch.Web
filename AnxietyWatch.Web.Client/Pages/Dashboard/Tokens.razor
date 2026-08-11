@@ -313,6 +313,12 @@
 
     private void OpenShareModal(LinkTokenDto token)
     {
+        if (IsExpired(token))
+        {
+            SetPageMessage("Este token ya expiró y no se puede compartir.", true);
+            return;
+        }
+
         shareToken = token;
         shareEmail = string.Empty;
         shareMessage = null;
@@ -322,6 +328,12 @@
     private async Task ShareTokenAsync()
     {
         if (shareToken is null || isSharing) return;
+        if (IsExpired(shareToken))
+        {
+            shareSucceeded = false;
+            shareMessage = "Este token ya expiró y no se puede compartir.";
+            return;
+        }
         if (!MailAddress.TryCreate(shareEmail.Trim(), out _))
         {
             shareMessage = "Ingresa un correo electrónico válido.";
