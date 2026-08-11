@@ -29,6 +29,13 @@ public sealed class AuthMessageResponse
     public string Message { get; set; } = string.Empty;
 }
 
+public sealed class VerifyEmailRequest
+{
+    [Required]
+    [JsonPropertyName("token")]
+    public string Token { get; set; } = string.Empty;
+}
+
 public sealed class EmailVerificationStatusResponse
 {
     [JsonPropertyName("emailVerified")]
