@@ -71,40 +71,6 @@ else
                         <ValidationMessage For="@(() => profileModel.FullName)" />
                     </div>
 
-                    <div class="form-field">
-                        <label for="profile-email">Correo electrónico</label>
-                        <div class="email-field">
-                            <input id="profile-email" class="form-input" type="email" value="@email" readonly />
-                            @if (emailVerified)
-                            {
-                                <span>Verificado</span>
-                            }
-                            else
-                            {
-                                <span class="email-pending">Pendiente</span>
-                            }
-                        </div>
-                        <small>Para cambiar el correo contacta a soporte.</small>
-                        @if (!emailVerified)
-                        {
-                            <button class="verification-resend-button"
-                                    type="button"
-                                    disabled="@(verificationLoading || verificationPending || verificationCooldownSeconds > 0)"
-                                    @onclick="ResendVerificationAsync">
-                                @(verificationPending
-                                    ? "Enviando..."
-                                    : verificationCooldownSeconds > 0
-                                        ? $"Reintentar en {verificationCooldownSeconds} s"
-                                        : "Reenviar verificación")
-                            </button>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(verificationNotice))
-                        {
-                            <small class="@(verificationError ? "verification-notice verification-notice--error" : "verification-notice")"
-                                   role="@(verificationError ? "alert" : "status")">@verificationNotice</small>
-                        }
-                    </div>
-
                     <div class="form-field form-field--wide">
                         <label for="profile-avatar-url">URL del avatar</label>
                         <InputText id="profile-avatar-url"
@@ -189,6 +155,53 @@ else
                 </div>
             </section>
         </EditForm>
+        }
+
+        <section class="profile-card" aria-labelledby="email-verification-title">
+            <div class="profile-card__heading">
+                <span class="section-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM4 7l8 6 8-6" /></svg>
+                </span>
+                <div>
+                    <h2 id="email-verification-title">Verificación de correo</h2>
+                    <p>Consulta y administra la verificación de tu cuenta independientemente de las preferencias.</p>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="profile-email">Correo electrónico</label>
+                <div class="email-field">
+                    <input id="profile-email" class="form-input" type="email" value="@email" readonly />
+                    @if (emailVerified)
+                    {
+                        <span>Verificado</span>
+                    }
+                    else
+                    {
+                        <span class="email-pending">Pendiente</span>
+                    }
+                </div>
+                <small>Para cambiar el correo contacta a soporte.</small>
+                @if (!emailVerified)
+                {
+                    <button class="verification-resend-button"
+                            type="button"
+                            disabled="@(verificationLoading || verificationPending || verificationCooldownSeconds > 0)"
+                            @onclick="ResendVerificationAsync">
+                        @(verificationPending
+                            ? "Enviando..."
+                            : verificationCooldownSeconds > 0
+                                ? $"Reintentar en {verificationCooldownSeconds} s"
+                                : "Reenviar verificación")
+                    </button>
+                }
+                @if (!string.IsNullOrWhiteSpace(verificationNotice))
+                {
+                    <small class="@(verificationError ? "verification-notice verification-notice--error" : "verification-notice")"
+                           role="@(verificationError ? "alert" : "status")">@verificationNotice</small>
+                }
+            </div>
+        </section>
 
         <EditForm Model="passwordModel" OnValidSubmit="UpdatePasswordAsync">
             <DataAnnotationsValidator />
@@ -277,7 +290,6 @@ else
             </div>
             <button type="button" disabled aria-disabled="true">Solicitar vía soporte</button>
         </section>
-        }
     </section>
 }
 
